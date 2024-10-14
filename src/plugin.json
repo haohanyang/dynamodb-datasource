@@ -1,0 +1,30 @@
+{
+  "$schema": "https://raw.githubusercontent.com/grafana/grafana/main/docs/sources/developers/plugins/plugin.schema.json",
+  "type": "datasource",
+  "name": "Dynamodb-Datasource",
+  "id": "haohanyang-dynamodb-datasource",
+  "metrics": true,
+  "backend": true,
+  "executable": "gpx_dynamodb_datasource",
+  "info": {
+    "description": "",
+    "author": {
+      "name": "Haohan Yang"
+    },
+    "keywords": [
+      "datasource"
+    ],
+    "logos": {
+      "small": "img/logo.svg",
+      "large": "img/logo.svg"
+    },
+    "links": [],
+    "screenshots": [],
+    "version": "%VERSION%",
+    "updated": "%TODAY%"
+  },
+  "dependencies": {
+    "grafanaDependency": ">=10.4.0",
+    "plugins": []
+  }
+}
