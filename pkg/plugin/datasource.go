@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
@@ -24,13 +25,30 @@ var (
 )
 
 // NewDatasource creates a new datasource instance.
-func NewDatasource(_ context.Context, _ backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
-	return &Datasource{}, nil
+func NewDatasource(context context.Context, settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
+	dsInfo := awsds.AWSDatasourceSettings{}
+	err := dsInfo.Load(settings)
+	if err != nil {
+		return nil, err
+	}
+
+	authSettings := awsds.ReadAuthSettings(context)
+	sessionCache := awsds.NewSessionCache()
+
+	return &Datasource{
+		Settings:     dsInfo,
+		authSettings: *authSettings,
+		sessionCache: sessionCache,
+	}, nil
 }
 
 // Datasource is an example datasource which can respond to data queries, reports
 // its health and has streaming skills.
-type Datasource struct{}
+type Datasource struct {
+	Settings     awsds.AWSDatasourceSettings
+	sessionCache *awsds.SessionCache
+	authSettings awsds.AuthSettings
+}
 
 // Dispose here tells plugin SDK that plugin wants to clean up resources when a new instance
 // created. As soon as datasource settings change detected by SDK old datasource instance will
@@ -63,7 +81,6 @@ type queryModel struct{}
 
 func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query backend.DataQuery) backend.DataResponse {
 	var response backend.DataResponse
-
 	// Unmarshal the JSON into our queryModel.
 	var qm queryModel
 
