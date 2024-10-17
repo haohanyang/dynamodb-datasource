@@ -1,8 +1,10 @@
 import React from "react";
-import { AwsAuthDataSourceJsonData, AwsAuthDataSourceSecureJsonData, ConnectionConfig } from "@grafana/aws-sdk";
+import { ConnectionConfig } from "@grafana/aws-sdk";
 import { DataSourcePluginOptionsEditorProps } from "@grafana/data";
+import { DynamoDBDataSourceOptions, DynamoDBDataSourceSecureJsonData } from "../types"
+import { InlineField, Input } from "@grafana/ui";
 
-interface Props extends DataSourcePluginOptionsEditorProps<AwsAuthDataSourceJsonData, AwsAuthDataSourceSecureJsonData> { }
+interface Props extends DataSourcePluginOptionsEditorProps<DynamoDBDataSourceOptions, DynamoDBDataSourceSecureJsonData> { }
 
 const standardRegions = [
   "af-south-1",
@@ -34,8 +36,23 @@ const standardRegions = [
 ];
 
 export function ConfigEditor(props: Props) {
+  const onTestTableChange: React.FormEventHandler<HTMLInputElement> = e => {
+    props.onOptionsChange({
+      ...props.options,
+      jsonData:
+      {
+        ...props.options.jsonData,
+        connectionTestTable: e.currentTarget.value
+      }
+    })
+  }
+
   return (
     <div className="width-30">
       <ConnectionConfig {...props} standardRegions={standardRegions} />
-    </div>);
+      <InlineField label="Test table name" tooltip="Name of table for connection test">
+        <Input value={props.options.jsonData.connectionTestTable} onChange={onTestTableChange}></Input>
+      </InlineField>
+    </div>
+  );
 };

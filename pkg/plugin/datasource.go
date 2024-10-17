@@ -4,13 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
+	"strconv"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
-	"github.com/haohanyang/dynamodb-datasource/pkg/models"
 )
 
 // Make sure Datasource implements required interfaces. This is important to do
@@ -25,18 +27,19 @@ var (
 )
 
 // NewDatasource creates a new datasource instance.
-func NewDatasource(context context.Context, settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
-	dsInfo := awsds.AWSDatasourceSettings{}
-	err := dsInfo.Load(settings)
+func NewDatasource(ctx context.Context, settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
+	dsSetting := awsds.AWSDatasourceSettings{}
+	err := dsSetting.Load(settings)
 	if err != nil {
+		backend.Logger.Error("failed to load settings", err.Error())
 		return nil, err
 	}
 
-	authSettings := awsds.ReadAuthSettings(context)
+	authSettings := awsds.ReadAuthSettings(ctx)
 	sessionCache := awsds.NewSessionCache()
 
 	return &Datasource{
-		Settings:     dsInfo,
+		Settings:     dsSetting,
 		authSettings: *authSettings,
 		sessionCache: sessionCache,
 	}, nil
@@ -57,50 +60,89 @@ func (d *Datasource) Dispose() {
 	// Clean up datasource instance resources.
 }
 
+func (d *Datasource) getDynamoDBClient(ctx context.Context, settings *backend.DataSourceInstanceSettings) (*dynamodb.DynamoDB, error) {
+
+	httpClientProvider := httpclient.NewProvider()
+	httpClientOptions, err := settings.HTTPClientOptions(ctx)
+	if err != nil {
+		backend.Logger.Error("failed to create http client options", err.Error())
+		return nil, err
+	}
+
+	httpClient, err := httpClientProvider.New(httpClientOptions)
+	if err != nil {
+		backend.Logger.Error("failed to create http client", err.Error())
+		return nil, err
+	}
+
+	session, err := d.sessionCache.GetSessionWithAuthSettings(awsds.GetSessionConfig{
+		Settings:      d.Settings,
+		HTTPClient:    httpClient,
+		UserAgentName: aws.String("DynamoDB"),
+	}, d.authSettings)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return dynamodb.New(session), nil
+}
+
 // QueryData handles multiple queries and returns multiple responses.
 // req contains the queries []DataQuery (where each query contains RefID as a unique identifier).
 // The QueryDataResponse contains a map of RefID to the response for each query, and each response
 // contains Frames ([]*Frame).
 func (d *Datasource) QueryData(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
-	// create response struct
 	response := backend.NewQueryDataResponse()
+	dynamoDBClient, err := d.getDynamoDBClient(ctx, req.PluginContext.DataSourceInstanceSettings)
+	if err != nil {
+		return nil, err
+	}
 
-	// loop over queries and execute them individually.
 	for _, q := range req.Queries {
-		res := d.query(ctx, req.PluginContext, q)
-
-		// save the response in a hashmap
-		// based on with RefID as identifier
+		res := d.query(ctx, dynamoDBClient, q)
 		response.Responses[q.RefID] = res
 	}
 
 	return response, nil
 }
 
-type queryModel struct{}
-
-func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query backend.DataQuery) backend.DataResponse {
+func (d *Datasource) query(ctx context.Context, dynamoDBClient *dynamodb.DynamoDB, query backend.DataQuery) backend.DataResponse {
 	var response backend.DataResponse
-	// Unmarshal the JSON into our queryModel.
-	var qm queryModel
+
+	var qm QueryModel
 
 	err := json.Unmarshal(query.JSON, &qm)
 	if err != nil {
 		return backend.ErrDataResponse(backend.StatusBadRequest, fmt.Sprintf("json unmarshal: %v", err.Error()))
 	}
 
-	// create data frame response.
-	// For an overview on data frames and how grafana handles them:
-	// https://grafana.com/developers/plugin-tools/introduction/data-frames
-	frame := data.NewFrame("response")
+	output, err := dynamoDBClient.ExecuteStatementWithContext(ctx, &dynamodb.ExecuteStatementInput{
+		Statement: aws.String(qm.QueryText),
+	})
 
-	// add fields.
+	if err != nil {
+		return backend.ErrDataResponse(backend.StatusBadRequest, fmt.Sprintf("executes statement: %v", err.Error()))
+	}
+
+	frame := data.NewFrame("response")
+	values := make([]*int32, 0)
+
+	for _, item := range output.Items {
+		if value, ok := item["value"]; ok {
+			iv, err := strconv.Atoi(*value.N)
+			if err != nil {
+				values = append(values, nil)
+			} else {
+				values = append(values, aws.Int32(int32(iv)))
+			}
+		}
+	}
+
 	frame.Fields = append(frame.Fields,
-		data.NewField("time", nil, []time.Time{query.TimeRange.From, query.TimeRange.To}),
-		data.NewField("values", nil, []int64{10, 20}),
+		data.NewField("values", nil, values),
 	)
 
-	// add the frames to the response.
 	response.Frames = append(response.Frames, frame)
 
 	return response
@@ -110,24 +152,28 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 // The main use case for these health checks is the test button on the
 // datasource configuration page which allows users to verify that
 // a datasource is working as expected.
-func (d *Datasource) CheckHealth(_ context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
+func (d *Datasource) CheckHealth(ctx context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
 	res := &backend.CheckHealthResult{}
-	config, err := models.LoadPluginSettings(*req.PluginContext.DataSourceInstanceSettings)
 
+	client, err := d.getDynamoDBClient(ctx, req.PluginContext.DataSourceInstanceSettings)
 	if err != nil {
 		res.Status = backend.HealthStatusError
-		res.Message = "Unable to load settings"
+		res.Message = err.Error()
 		return res, nil
 	}
 
-	if config.Secrets.ApiKey == "" {
+	_, err = client.DescribeTableWithContext(ctx, &dynamodb.DescribeTableInput{
+		TableName: aws.String("test"),
+	})
+
+	if err != nil {
 		res.Status = backend.HealthStatusError
-		res.Message = "API key is missing"
+		res.Message = err.Error()
 		return res, nil
 	}
 
 	return &backend.CheckHealthResult{
 		Status:  backend.HealthStatusOk,
-		Message: "Data source is working",
+		Message: "Successfully connects to DynamoDB",
 	}, nil
 }

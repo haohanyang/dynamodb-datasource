@@ -1,34 +1,18 @@
-import { DataSourceJsonData } from '@grafana/data';
+import { AwsAuthDataSourceJsonData, AwsAuthDataSourceSecureJsonData } from '@grafana/aws-sdk';
 import { DataQuery } from '@grafana/schema';
 
-export interface MyQuery extends DataQuery {
+export interface DynamoDBQuery extends DataQuery {
   queryText?: string;
-  constant: number;
 }
 
-export const DEFAULT_QUERY: Partial<MyQuery> = {
-  constant: 6.5,
+export const DEFAULT_QUERY: Partial<DynamoDBQuery> = {
+  queryText: "",
 };
 
-export interface DataPoint {
-  Time: number;
-  Value: number;
+export interface DynamoDBDataSourceOptions extends AwsAuthDataSourceJsonData {
+  connectionTestTable?: string;
 }
 
-export interface DataSourceResponse {
-  datapoints: DataPoint[];
-}
+export interface DynamoDBDataSourceSecureJsonData extends AwsAuthDataSourceSecureJsonData { }
 
-/**
- * These are options configured for each DataSource instance
- */
-export interface MyDataSourceOptions extends DataSourceJsonData {
-  path?: string;
-}
 
-/**
- * Value that is used in the backend, but never sent over HTTP to the frontend
- */
-export interface MySecureJsonData {
-  apiKey?: string;
-}
