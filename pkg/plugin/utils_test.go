@@ -183,4 +183,89 @@ func TestOutputToDataFrame(t *testing.T) {
 		assertEqual(t, fmt.Sprintf("%.1f", getFieldValue[float64](t, field, 2)), "2.1")
 	})
 
+	t.Run("N int & float", func(t *testing.T) {
+		rows := []DataRow{
+			{"myNIF": &dynamodb.AttributeValue{
+				N: aws.String("1"),
+			}},
+			{"my": &dynamodb.AttributeValue{
+				N: aws.String("2"),
+			}},
+			{"myNIF": &dynamodb.AttributeValue{
+				N: aws.String("2.1"),
+			}},
+		}
+
+		output, err := outputFromItems(ctx, client, testTableName, rows, "myNIF")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		frame, err := OutputToDataFrame("test", output)
+		if err != nil {
+			t.Fatal(err)
+		}
+		field := frame.Fields[0]
+		var null *float64
+		assertEqual(t, field.Name, "myNIF")
+		assertEqual(t, fmt.Sprintf("%.1f", getFieldValue[float64](t, field, 0)), "1.0")
+		assertEqual(t, field.At(1), null)
+		assertEqual(t, fmt.Sprintf("%.1f", getFieldValue[float64](t, field, 2)), "2.1")
+	})
+
+	t.Run("N float & int", func(t *testing.T) {
+		rows := []DataRow{
+			{"myNFI": &dynamodb.AttributeValue{
+				N: aws.String("1.1"),
+			}},
+			{"my": &dynamodb.AttributeValue{
+				N: aws.String("2"),
+			}},
+			{"myNFI": &dynamodb.AttributeValue{
+				N: aws.String("2"),
+			}},
+		}
+
+		output, err := outputFromItems(ctx, client, testTableName, rows, "myNFI")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		frame, err := OutputToDataFrame("test", output)
+		if err != nil {
+			t.Fatal(err)
+		}
+		field := frame.Fields[0]
+		var null *float64
+		assertEqual(t, field.Name, "myNFI")
+		assertEqual(t, fmt.Sprintf("%.1f", getFieldValue[float64](t, field, 0)), "1.1")
+		assertEqual(t, field.At(1), null)
+		assertEqual(t, fmt.Sprintf("%.1f", getFieldValue[float64](t, field, 2)), "2.0")
+	})
+
+	t.Run("B", func(t *testing.T) {
+		rows := []DataRow{
+			{"myB": &dynamodb.AttributeValue{
+				BOOL: aws.Bool(true),
+			}},
+			{"myB": &dynamodb.AttributeValue{
+				BOOL: aws.Bool(false),
+			}},
+		}
+
+		output, err := outputFromItems(ctx, client, testTableName, rows, "myB")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		frame, err := OutputToDataFrame("test", output)
+		if err != nil {
+			t.Fatal(err)
+		}
+		field := frame.Fields[0]
+		assertEqual(t, field.Name, "myB")
+		assertEqual(t, getFieldValue[bool](t, field, 0), true)
+		assertEqual(t, getFieldValue[bool](t, field, 1), false)
+	})
+
 }

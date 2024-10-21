@@ -82,7 +82,7 @@ func (c *Column) AppendValue(value *dynamodb.AttributeValue) error {
 			// int64
 			if c.Type() == data.FieldTypeNullableInt64 {
 				c.Field.Append(i)
-			} else if c.Type() == data.FieldTypeFloat64 {
+			} else if c.Type() == data.FieldTypeNullableFloat64 {
 				c.Field.Append(aws.Float64(float64(*i)))
 			} else {
 				return fmt.Errorf("field %s should have type %s, but got %s", c.Name, c.Type().ItemTypeString(), "N")
