@@ -50,10 +50,11 @@ def create_table(table_name: str = TABLE_NAME):
 
 
 def put_item(table_name: str = TABLE_NAME):
-    table = get_table(table_name)
-    table.put_item(
+    client = get_client()
+    client.put_item(
+        TableName=table_name,
         Item={
-            "id": "1",
+            "id": {"S": "1"},
             "myString": {"S": "Hello, DynamoDB!"},
             "myNumber": {"N": "123.45"},
             "myBinary": {"B": b"some_binary_data"},
