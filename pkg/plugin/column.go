@@ -55,8 +55,12 @@ func NewColumn(rowIndex int, name string, value *dynamodb.AttributeValue) (*Colu
 		field = data.NewField(name, nil, make([]*json.RawMessage, rowIndex+1))
 		field.Set(rowIndex, v)
 	} else if value.L != nil {
-		field = data.NewField(name, nil, make([]*string, rowIndex+1))
-		field.Set(rowIndex, aws.String("[L]"))
+		v, err := listToJson(value)
+		if err != nil {
+			return nil, err
+		}
+		field = data.NewField(name, nil, make([]*json.RawMessage, rowIndex+1))
+		field.Set(rowIndex, v)
 	} else if value.SS != nil {
 		field = data.NewField(name, nil, make([]*string, rowIndex+1))
 		field.Set(rowIndex, aws.String("[SS]"))
@@ -136,10 +140,14 @@ func (c *Column) AppendValue(value *dynamodb.AttributeValue) error {
 		}
 		c.Field.Append(v)
 	} else if value.L != nil {
-		if c.Type() != data.FieldTypeNullableString {
+		if c.Type() != data.FieldTypeNullableJSON {
 			return fmt.Errorf("field %s should have type %s, but got %s", c.Name, c.Type().ItemTypeString(), "L")
 		}
-		c.Field.Append(aws.String("[L]"))
+		v, err := listToJson(value)
+		if err != nil {
+			return err
+		}
+		c.Field.Append(v)
 	} else if value.SS != nil {
 		if c.Type() != data.FieldTypeNullableString {
 			return fmt.Errorf("field %s should have type %s, but got %s", c.Name, c.Type().ItemTypeString(), "SS")

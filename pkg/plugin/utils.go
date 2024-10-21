@@ -153,6 +153,21 @@ func mapToJson(value *dynamodb.AttributeValue) (*json.RawMessage, error) {
 	return pointer(json.RawMessage(jsonString)), nil
 }
 
+func listToJson(value *dynamodb.AttributeValue) (*json.RawMessage, error) {
+	var l []interface{}
+
+	err := dynamodbattribute.UnmarshalList(value.L, &l)
+	if err != nil {
+		return nil, err
+	}
+
+	jsonString, err := json.Marshal(l)
+	if err != nil {
+		return nil, err
+	}
+	return pointer(json.RawMessage(jsonString)), nil
+}
+
 func pointer[K any](val K) *K {
 	return &val
 }
