@@ -344,4 +344,28 @@ func TestOutputToDataFrame(t *testing.T) {
 		assertEqual(t, field.Type(), data.FieldTypeNullableJSON)
 	})
 
+	t.Run("SS", func(t *testing.T) {
+		rows := []DataRow{
+			{"mySS": &dynamodb.AttributeValue{
+				SS: []*string{aws.String("s1"), aws.String("s2")},
+			}},
+			{"mySS": &dynamodb.AttributeValue{
+				SS: []*string{aws.String("s3"), aws.String("s4")},
+			}},
+		}
+
+		output, err := outputFromItems(ctx, client, testTableName, rows, "mySS")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		frame, err := OutputToDataFrame("test", output)
+		if err != nil {
+			t.Fatal(err)
+		}
+		field := frame.Fields[0]
+		assertEqual(t, field.Name, "mySS")
+		assertEqual(t, field.Type(), data.FieldTypeNullableJSON)
+	})
+
 }

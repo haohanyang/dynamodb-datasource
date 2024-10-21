@@ -168,6 +168,14 @@ func listToJson(value *dynamodb.AttributeValue) (*json.RawMessage, error) {
 	return pointer(json.RawMessage(jsonString)), nil
 }
 
+func stringSetToJson(value *dynamodb.AttributeValue) (*json.RawMessage, error) {
+	jsonString, err := json.Marshal(value.SS)
+	if err != nil {
+		return nil, err
+	}
+	return pointer(json.RawMessage(jsonString)), nil
+}
+
 func pointer[K any](val K) *K {
 	return &val
 }
