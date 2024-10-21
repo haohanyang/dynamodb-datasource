@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -12,7 +11,6 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
-	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
 
 // Make sure Datasource implements required interfaces. This is important to do
@@ -125,26 +123,13 @@ func (d *Datasource) query(ctx context.Context, dynamoDBClient *dynamodb.DynamoD
 		return backend.ErrDataResponse(backend.StatusBadRequest, fmt.Sprintf("executes statement: %v", err.Error()))
 	}
 
-	frame := data.NewFrame("response")
-	values := make([]*int32, 0)
-
-	for _, item := range output.Items {
-		if value, ok := item["value"]; ok {
-			iv, err := strconv.Atoi(*value.N)
-			if err != nil {
-				values = append(values, nil)
-			} else {
-				values = append(values, aws.Int32(int32(iv)))
-			}
-		}
+	frame, err := OutputToDataFrame(query.RefID, output)
+	if err != nil {
+		response.Error = err
+		return response
 	}
 
-	frame.Fields = append(frame.Fields,
-		data.NewField("values", nil, values),
-	)
-
 	response.Frames = append(response.Frames, frame)
-
 	return response
 }
 
@@ -163,7 +148,7 @@ func (d *Datasource) CheckHealth(ctx context.Context, req *backend.CheckHealthRe
 		return res, nil
 	}
 
-	extraSettings, err := LoadExtraPluginSettings(*req.PluginContext.DataSourceInstanceSettings)
+	extraSettings, err := loadExtraPluginSettings(*req.PluginContext.DataSourceInstanceSettings)
 	if err != nil {
 		res.Status = backend.HealthStatusError
 		res.Message = err.Error()
