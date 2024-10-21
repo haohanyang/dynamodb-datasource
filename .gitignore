@@ -37,3 +37,6 @@ ci/
 .idea
 
 .eslintcache
+
+# Python virtual environment
+venv/

@@ -1,7 +1,7 @@
 services:
   grafana:
     user: root
-    container_name: haohanyang-dynamodb-datasource
+    container_name: dynamodb-datasource-grafana
     build:
       context: ./.config
       args:
@@ -29,13 +29,19 @@ services:
     networks:
       - dynamodb-datasource
   
-  dynamodb:
-    image: amazon/dynamodb-local
+  localstack:
+    container_name: dynamodb-datasource-localstack
+    image: localstack/localstack
     ports:
-      - 8002:8000
+      - 4566:4566 # LocalStack Gateway
+      - 127.0.0.1:4510-4559:4510-4559  # external services port range
+    environment:
+      - DEBUG=${DEBUG:-0}
+      - SERVICES=dynamodb
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - dynamodb-datasource
-
 networks:
   dynamodb-datasource:
     driver: bridge
