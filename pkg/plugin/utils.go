@@ -176,6 +176,28 @@ func stringSetToJson(value *dynamodb.AttributeValue) (*json.RawMessage, error) {
 	return pointer(json.RawMessage(jsonString)), nil
 }
 
+func numberSetToJson(value *dynamodb.AttributeValue) (*json.RawMessage, error) {
+	l := make([]interface{}, len(value.NS))
+
+	for idx, n := range value.NS {
+		i, f, err := parseNumber(*n)
+		if err != nil {
+			return nil, err
+		}
+		if i != nil {
+			l[idx] = *i
+		} else {
+			l[idx] = *f
+		}
+	}
+
+	jsonString, err := json.Marshal(l)
+	if err != nil {
+		return nil, err
+	}
+	return pointer(json.RawMessage(jsonString)), nil
+}
+
 func pointer[K any](val K) *K {
 	return &val
 }
