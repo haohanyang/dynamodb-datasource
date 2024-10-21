@@ -243,17 +243,17 @@ func TestOutputToDataFrame(t *testing.T) {
 		assertEqual(t, fmt.Sprintf("%.1f", getFieldValue[float64](t, field, 2)), "2.0")
 	})
 
-	t.Run("B", func(t *testing.T) {
+	t.Run("BOOL", func(t *testing.T) {
 		rows := []DataRow{
-			{"myB": &dynamodb.AttributeValue{
+			{"myBOOL": &dynamodb.AttributeValue{
 				BOOL: aws.Bool(true),
 			}},
-			{"myB": &dynamodb.AttributeValue{
+			{"myBOOL": &dynamodb.AttributeValue{
 				BOOL: aws.Bool(false),
 			}},
 		}
 
-		output, err := outputFromItems(ctx, client, testTableName, rows, "myB")
+		output, err := outputFromItems(ctx, client, testTableName, rows, "myBOOL")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -263,7 +263,7 @@ func TestOutputToDataFrame(t *testing.T) {
 			t.Fatal(err)
 		}
 		field := frame.Fields[0]
-		assertEqual(t, field.Name, "myB")
+		assertEqual(t, field.Name, "myBOOL")
 		assertEqual(t, getFieldValue[bool](t, field, 0), true)
 		assertEqual(t, getFieldValue[bool](t, field, 1), false)
 	})
