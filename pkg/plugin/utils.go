@@ -11,6 +11,8 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
 
+var endpoint = "http://localhost:4566"
+
 func loadExtraPluginSettings(source backend.DataSourceInstanceSettings) (*ExtraPluginSettings, error) {
 	settings := ExtraPluginSettings{}
 	err := json.Unmarshal(source.JSONData, &settings)
@@ -23,17 +25,64 @@ func loadExtraPluginSettings(source backend.DataSourceInstanceSettings) (*ExtraP
 
 func parseNumber(n string) (*int64, *float64, error) {
 	i, err := strconv.ParseInt(n, 10, 64)
-	if err != nil {
+	if err == nil {
 		return aws.Int64(i), nil, nil
 	} else {
 		f, err := strconv.ParseFloat(n, 64)
 		// float64
-		if err != nil {
+		if err == nil {
 			return nil, aws.Float64(f), nil
 		}
 	}
 
 	return nil, nil, fmt.Errorf("failed to parse %s", n)
+}
+
+func PrintDataFrame(dataFrame *data.Frame) {
+	// Print headers
+	fmt.Print("|")
+	for i, field := range dataFrame.Fields {
+		fmt.Print(field.Name)
+		if i < len(dataFrame.Fields)-1 {
+			fmt.Print(",")
+		}
+	}
+	fmt.Println("|")
+
+	// Print data
+	for i := 0; i < dataFrame.Rows(); i++ {
+		fmt.Print("|")
+		for j, field := range dataFrame.Fields {
+			v, ok := field.ConcreteAt(i)
+
+			if ok {
+				if field.Type() == data.FieldTypeNullableJSON {
+					rm := v.(json.RawMessage)
+					rb, err := rm.MarshalJSON()
+					if err != nil {
+						panic(err)
+					}
+					fmt.Print(string(rb))
+				} else if field.Type() == data.FieldTypeNullableString {
+					s := v.(string)
+					if len(s) > 10 {
+						fmt.Print(s[:10] + "...")
+					} else {
+						fmt.Print(s)
+					}
+				} else {
+					fmt.Print(v)
+				}
+			} else {
+				fmt.Print("null")
+			}
+
+			if j < len(dataFrame.Fields)-1 {
+				fmt.Print(",")
+			}
+		}
+		fmt.Println("|")
+	}
 }
 
 func OutputToDataFrame(dataFrameName string, output *dynamodb.ExecuteStatementOutput) (*data.Frame, error) {
