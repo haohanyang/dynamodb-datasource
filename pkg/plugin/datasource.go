@@ -153,6 +153,7 @@ func (d *Datasource) query(ctx context.Context, dynamoDBClient *dynamodb.DynamoD
 // datasource configuration page which allows users to verify that
 // a datasource is working as expected.
 func (d *Datasource) CheckHealth(ctx context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
+	backend.Logger.Debug("Checking health")
 	res := &backend.CheckHealthResult{}
 
 	client, err := d.getDynamoDBClient(ctx, req.PluginContext.DataSourceInstanceSettings)
@@ -162,8 +163,15 @@ func (d *Datasource) CheckHealth(ctx context.Context, req *backend.CheckHealthRe
 		return res, nil
 	}
 
+	extraSettings, err := LoadExtraPluginSettings(*req.PluginContext.DataSourceInstanceSettings)
+	if err != nil {
+		res.Status = backend.HealthStatusError
+		res.Message = err.Error()
+		return res, err
+	}
+
 	_, err = client.DescribeTableWithContext(ctx, &dynamodb.DescribeTableInput{
-		TableName: aws.String("test"),
+		TableName: aws.String(extraSettings.ConnectionTestTable),
 	})
 
 	if err != nil {
