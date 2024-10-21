@@ -14,6 +14,13 @@ jobs:
     permissions:
       contents: write
     runs-on: ubuntu-latest
+    services:
+      localstack:
+        image: localstack/localstack
+        ports:
+          - 4566:4566 # LocalStack Gateway
+        env:
+          SERVICES: dynamodb
     steps:
       - uses: actions/checkout@v4
       - uses: grafana/plugin-actions/build-plugin@release

@@ -268,4 +268,42 @@ func TestOutputToDataFrame(t *testing.T) {
 		assertEqual(t, getFieldValue[bool](t, field, 1), false)
 	})
 
+	t.Run("M", func(t *testing.T) {
+		rows := []DataRow{
+			{"myM": &dynamodb.AttributeValue{
+				M: map[string]*dynamodb.AttributeValue{
+					"key1": {
+						S: aws.String("string1"),
+					},
+					"key2": {
+						N: aws.String("1"),
+					},
+				},
+			}},
+			{"myM": &dynamodb.AttributeValue{
+				M: map[string]*dynamodb.AttributeValue{
+					"key3": {
+						S: aws.String("string2"),
+					},
+					"key4": {
+						N: aws.String("2.1"),
+					},
+				},
+			}},
+		}
+
+		output, err := outputFromItems(ctx, client, testTableName, rows, "myM")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		frame, err := OutputToDataFrame("test", output)
+		if err != nil {
+			t.Fatal(err)
+		}
+		field := frame.Fields[0]
+		assertEqual(t, field.Name, "myM")
+		assertEqual(t, field.Type(), data.FieldTypeNullableJSON)
+	})
+
 }
