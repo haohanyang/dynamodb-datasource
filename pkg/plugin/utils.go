@@ -6,7 +6,10 @@ import (
 	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
@@ -120,4 +123,36 @@ func OutputToDataFrame(dataFrameName string, output *dynamodb.ExecuteStatementOu
 	}
 
 	return frame, nil
+}
+
+func NewTestClient() (*dynamodb.DynamoDB, error) {
+	sess, err := session.NewSession(&aws.Config{
+		Endpoint:    aws.String(endpoint),
+		Credentials: credentials.AnonymousCredentials,
+		Region:      aws.String("us-east-1"),
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	return dynamodb.New(sess), nil
+}
+
+func mapToJson(value *dynamodb.AttributeValue) (*json.RawMessage, error) {
+	var m map[string]interface{}
+
+	err := dynamodbattribute.UnmarshalMap(value.M, &m)
+	if err != nil {
+		return nil, err
+	}
+
+	jsonString, err := json.Marshal(m)
+	if err != nil {
+		return nil, err
+	}
+	return pointer(json.RawMessage(jsonString)), nil
+}
+
+func pointer[K any](val K) *K {
+	return &val
 }

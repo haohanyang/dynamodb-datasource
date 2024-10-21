@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -47,8 +48,12 @@ func NewColumn(rowIndex int, name string, value *dynamodb.AttributeValue) (*Colu
 	} else if value.NULL != nil {
 		return nil, nil
 	} else if value.M != nil {
-		field = data.NewField(name, nil, make([]*string, rowIndex+1))
-		field.Set(rowIndex, aws.String("[M]"))
+		v, err := mapToJson(value)
+		if err != nil {
+			return nil, err
+		}
+		field = data.NewField(name, nil, make([]*json.RawMessage, rowIndex+1))
+		field.Set(rowIndex, v)
 	} else if value.L != nil {
 		field = data.NewField(name, nil, make([]*string, rowIndex+1))
 		field.Set(rowIndex, aws.String("[L]"))
@@ -122,10 +127,14 @@ func (c *Column) AppendValue(value *dynamodb.AttributeValue) error {
 	} else if value.NULL != nil {
 		c.Field.Append(nil)
 	} else if value.M != nil {
-		if c.Type() != data.FieldTypeNullableString {
+		if c.Type() != data.FieldTypeNullableJSON {
 			return fmt.Errorf("field %s should have type %s, but got %s", c.Name, c.Type().ItemTypeString(), "M")
 		}
-		c.Field.Append(aws.String("[M]"))
+		v, err := mapToJson(value)
+		if err != nil {
+			return err
+		}
+		c.Field.Append(v)
 	} else if value.L != nil {
 		if c.Type() != data.FieldTypeNullableString {
 			return fmt.Errorf("field %s should have type %s, but got %s", c.Name, c.Type().ItemTypeString(), "L")
