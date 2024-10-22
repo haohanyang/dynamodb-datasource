@@ -4,6 +4,7 @@ import "github.com/aws/aws-sdk-go/service/dynamodb"
 
 type QueryModel struct {
 	QueryText string
+	Limit     int64
 }
 
 type DynamoDBDataType int

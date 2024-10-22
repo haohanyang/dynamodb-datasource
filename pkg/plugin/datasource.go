@@ -115,9 +115,15 @@ func (d *Datasource) query(ctx context.Context, dynamoDBClient *dynamodb.DynamoD
 		return backend.ErrDataResponse(backend.StatusBadRequest, fmt.Sprintf("json unmarshal: %v", err.Error()))
 	}
 
-	output, err := dynamoDBClient.ExecuteStatementWithContext(ctx, &dynamodb.ExecuteStatementInput{
+	input := &dynamodb.ExecuteStatementInput{
 		Statement: aws.String(qm.QueryText),
-	})
+	}
+
+	if qm.Limit > 0 {
+		input.Limit = aws.Int64(qm.Limit)
+	}
+
+	output, err := dynamoDBClient.ExecuteStatementWithContext(ctx, input)
 
 	if err != nil {
 		return backend.ErrDataResponse(backend.StatusBadRequest, fmt.Sprintf("executes statement: %v", err.Error()))

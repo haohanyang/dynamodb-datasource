@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { Button, CodeEditor, Field } from "@grafana/ui";
+import { Button, CodeEditor, Field, InlineField, Input } from "@grafana/ui";
 import { QueryEditorProps } from "@grafana/data";
 import { DataSource } from "../datasource";
 import { DynamoDBDataSourceOptions, DynamoDBQuery } from "../types";
@@ -14,6 +14,18 @@ export function QueryEditor({ query, onChange }: Props) {
     onChange({ ...query, queryText: text });
   };
 
+  const onLimitChange: React.FormEventHandler<HTMLInputElement> = e => {
+    if (!e.currentTarget.value) {
+      onChange({ ...query, limit: undefined });
+    } else {
+      const parsed = Number.parseInt(e.currentTarget.value, 10);
+      if (Number.isInteger(parsed) && parsed > 0) {
+        onChange({ ...query, limit: parsed });
+      }
+    }
+  };
+
+
   const onFormatQueryText = () => {
     if (codeEditorRef.current) {
       codeEditorRef.current.getAction("editor.action.formatDocument").run();
@@ -26,7 +38,10 @@ export function QueryEditor({ query, onChange }: Props) {
 
   return (
     <>
-      <Field label="Query Text" description="PartiQL text">
+      <InlineField label="Limit" tooltip="(Optional) The maximum number of items to evaluate">
+        <Input type="number" min={0} value={query.limit} onChange={onLimitChange} />
+      </InlineField>
+      <Field label="Query Text" description="The PartiQL statement representing the operation to run">
         <CodeEditor
           onChange={onQueryTextChange}
           value={query.queryText || ""}

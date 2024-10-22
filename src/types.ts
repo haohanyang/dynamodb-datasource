@@ -3,6 +3,7 @@ import { DataQuery } from '@grafana/schema';
 
 export interface DynamoDBQuery extends DataQuery {
   queryText?: string;
+  limit?: number
 }
 
 export const DEFAULT_QUERY: Partial<DynamoDBQuery> = {
