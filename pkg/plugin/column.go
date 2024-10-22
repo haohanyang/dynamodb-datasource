@@ -91,6 +91,7 @@ func (c *Column) AppendValue(value *dynamodb.AttributeValue) error {
 		if c.Type() != data.FieldTypeNullableString {
 			return fmt.Errorf("field %s should have type %s, but got %s", c.Name, c.Type().ItemTypeString(), "S")
 		}
+		c.Field.Append(value.S)
 	} else if value.N != nil {
 		i, f, err := parseNumber(*value.N)
 		if err != nil {
