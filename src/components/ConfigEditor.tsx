@@ -2,7 +2,7 @@ import React from "react";
 import { ConnectionConfig } from "@grafana/aws-sdk";
 import { DataSourcePluginOptionsEditorProps } from "@grafana/data";
 import { DynamoDBDataSourceOptions, DynamoDBDataSourceSecureJsonData } from "../types"
-import { InlineField, Input } from "@grafana/ui";
+import { Field, Input } from "@grafana/ui";
 
 interface Props extends DataSourcePluginOptionsEditorProps<DynamoDBDataSourceOptions, DynamoDBDataSourceSecureJsonData> { }
 
@@ -50,9 +50,9 @@ export function ConfigEditor(props: Props) {
   return (
     <div className="width-30">
       <ConnectionConfig {...props} standardRegions={standardRegions} />
-      <InlineField label="Test table name" tooltip="Name of table for connection test">
-        <Input value={props.options.jsonData.connectionTestTable} onChange={onTestTableChange}></Input>
-      </InlineField>
+      <Field label="Test table" description="Name of table for connection test">
+        <Input value={props.options.jsonData.connectionTestTable} onChange={onTestTableChange} aria-label="Test table"></Input>
+      </Field>
     </div>
   );
 };

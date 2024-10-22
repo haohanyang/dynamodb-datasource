@@ -1,26 +1,40 @@
-import { test, expect } from '@grafana/plugin-e2e';
-import { MyDataSourceOptions, MySecureJsonData } from '../src/types';
+import { test, expect } from "@grafana/plugin-e2e";
+import { DynamoDBDataSourceOptions, DynamoDBDataSourceSecureJsonData } from "../src/types";
 
-test('"Save & test" should be successful when configuration is valid', async ({
+test(`"Save & test" should be successful when configuration is valid`, async ({
   createDataSourceConfigPage,
   readProvisionedDataSource,
   page,
 }) => {
-  const ds = await readProvisionedDataSource<MyDataSourceOptions, MySecureJsonData>({ fileName: 'datasources.yml' });
+  const ds = await readProvisionedDataSource<DynamoDBDataSourceOptions, DynamoDBDataSourceSecureJsonData>({ fileName: 'e2e.yml' });
   const configPage = await createDataSourceConfigPage({ type: ds.type });
-  await page.getByRole('textbox', { name: 'Path' }).fill(ds.jsonData.path ?? '');
-  await page.getByRole('textbox', { name: 'API Key' }).fill(ds.secureJsonData?.apiKey ?? '');
+
+  await page.getByLabel("Authentication Provider", { exact: true }).fill("Access & secret key")
+  await page.keyboard.press("Enter")
+  await page.getByLabel("Access Key ID").fill("test")
+  await page.getByLabel("Secret Access Key").fill("test")
+  await page.getByLabel("Endpoint").fill("http://localstack:4566")
+  await page.getByLabel("Default Region").fill("us-east-1")
+  await page.keyboard.press("Enter")
+  await page.getByLabel("Test table").fill("test")
   await expect(configPage.saveAndTest()).toBeOK();
 });
 
-test('"Save & test" should fail when configuration is invalid', async ({
+test(`"Save & test" should be successful when test table doesn't exist`, async ({
   createDataSourceConfigPage,
   readProvisionedDataSource,
   page,
 }) => {
-  const ds = await readProvisionedDataSource<MyDataSourceOptions, MySecureJsonData>({ fileName: 'datasources.yml' });
+  const ds = await readProvisionedDataSource<DynamoDBDataSourceOptions, DynamoDBDataSourceSecureJsonData>({ fileName: 'e2e.yml' });
   const configPage = await createDataSourceConfigPage({ type: ds.type });
-  await page.getByRole('textbox', { name: 'Path' }).fill(ds.jsonData.path ?? '');
+
+  await page.getByLabel("Authentication Provider", { exact: true }).fill("Access & secret key")
+  await page.keyboard.press("Enter")
+  await page.getByLabel("Access Key ID").fill("test")
+  await page.getByLabel("Secret Access Key").fill("test")
+  await page.getByLabel("Endpoint").fill("http://localstack:4566")
+  await page.getByLabel("Default Region").fill("us-east-1")
+  await page.keyboard.press("Enter")
+  await page.getByLabel("Test table").fill("null")
   await expect(configPage.saveAndTest()).not.toBeOK();
-  await expect(configPage).toHaveAlert('error', { hasText: 'API key is missing' });
 });

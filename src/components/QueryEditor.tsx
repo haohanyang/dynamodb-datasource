@@ -39,7 +39,7 @@ export function QueryEditor({ query, onChange }: Props) {
   return (
     <>
       <InlineField label="Limit" tooltip="(Optional) The maximum number of items to evaluate">
-        <Input type="number" min={0} value={query.limit} onChange={onLimitChange} />
+        <Input type="number" min={0} value={query.limit} onChange={onLimitChange} aria-label="Limit" />
       </InlineField>
       <Field label="Query Text" description="The PartiQL statement representing the operation to run">
         <CodeEditor

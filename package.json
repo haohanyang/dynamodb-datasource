@@ -16,6 +16,7 @@
   "author": "Haohanyang",
   "license": "Apache-2.0",
   "devDependencies": {
+    "@aws-sdk/client-dynamodb": "^3.677.0",
     "@babel/core": "^7.21.4",
     "@grafana/eslint-config": "^7.0.0",
     "@grafana/plugin-e2e": "^1.8.3",
