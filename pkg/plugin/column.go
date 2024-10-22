@@ -130,7 +130,7 @@ func (c *Column) AppendValue(value *dynamodb.AttributeValue) error {
 		if c.Type() != data.FieldTypeNullableString {
 			return fmt.Errorf("field %s should have type %s, but got %s", c.Name, c.Type().ItemTypeString(), "B")
 		}
-		c.Field.Append(aws.String("[BINARY]"))
+		c.Field.Append(aws.String("[B]"))
 	} else if value.BOOL != nil {
 		if c.Type() != data.FieldTypeNullableBool {
 			return fmt.Errorf("field %s should have type %s, but got %s", c.Name, c.Type().ItemTypeString(), "BOOL")
