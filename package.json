@@ -9,11 +9,11 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint --cache --ignore-path ./.gitignore --ext .js,.jsx,.ts,.tsx .",
     "lint:fix": "npm run lint -- --fix",
-    "e2e": "playwright test",
+    "e2e": "playwright test --workers 1",
     "server": "docker compose up --build",
     "sign": "npx --yes @grafana/sign-plugin@latest"
   },
-  "author": "Haohanyang",
+  "author": "Haohan Yang",
   "license": "Apache-2.0",
   "devDependencies": {
     "@aws-sdk/client-dynamodb": "^3.677.0",

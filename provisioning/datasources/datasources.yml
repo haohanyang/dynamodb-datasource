@@ -9,6 +9,5 @@ datasources:
     version: 1
     editable: true
     jsonData:
-      authType: keys
-      defaultRegion: us-east-1
+      authType: default
     secureJsonData:

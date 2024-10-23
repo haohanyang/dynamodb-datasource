@@ -1,7 +1,7 @@
 apiVersion: 1
 
 datasources:
-  - name: dynamodb-datasource
+  - name: test-datasources
     type: haohanyang-dynamodb-datasource
     access: proxy
     isDefault: false
@@ -10,7 +10,9 @@ datasources:
     editable: true
     jsonData:
       authType: keys
+      endpoint: http://localstack:4566
       defaultRegion: us-east-1
+      connectionTestTable: test
     secureJsonData:
       accessKey: test
       secretKey: test

@@ -43,7 +43,7 @@ test(`"Save & test" should be successful when configuration is valid`, async ({
   readProvisionedDataSource,
   page,
 }) => {
-  const ds = await readProvisionedDataSource<DynamoDBDataSourceOptions, DynamoDBDataSourceSecureJsonData>({ fileName: 'e2e.yml' });
+  const ds = await readProvisionedDataSource<DynamoDBDataSourceOptions, DynamoDBDataSourceSecureJsonData>({ fileName: "datasources.yml" });
   const configPage = await createDataSourceConfigPage({ type: ds.type });
 
   await page.getByLabel("Authentication Provider", { exact: true }).fill("Access & secret key")
@@ -57,12 +57,13 @@ test(`"Save & test" should be successful when configuration is valid`, async ({
   await expect(configPage.saveAndTest()).toBeOK();
 });
 
+
 test(`"Save & test" should be successful when test table doesn't exist`, async ({
   createDataSourceConfigPage,
   readProvisionedDataSource,
   page,
 }) => {
-  const ds = await readProvisionedDataSource<DynamoDBDataSourceOptions, DynamoDBDataSourceSecureJsonData>({ fileName: 'e2e.yml' });
+  const ds = await readProvisionedDataSource<DynamoDBDataSourceOptions, DynamoDBDataSourceSecureJsonData>({ fileName: "datasources.yml" });
   const configPage = await createDataSourceConfigPage({ type: ds.type });
 
   await page.getByLabel("Authentication Provider", { exact: true }).fill("Access & secret key")

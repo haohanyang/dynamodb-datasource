@@ -1,7 +1,7 @@
 import { CreateTableCommand, DeleteTableCommand, DynamoDBClient, ListTablesCommand, PutItemCommand } from '@aws-sdk/client-dynamodb';
 import { test, expect } from '@grafana/plugin-e2e';
 
-test.beforeAll(async function () {
+test.beforeAll(async function ({ createDataSource, readProvisionedDataSource }) {
     process.env.AWS_ACCESS_KEY_ID = "test"
     process.env.AWS_SECRET_ACCESS_KEY = "test"
     const client = new DynamoDBClient({
@@ -56,6 +56,9 @@ test.beforeAll(async function () {
             id: { N: "3" },
         }
     }))
+
+    const ds = await readProvisionedDataSource({ fileName: "e2e.yml" });
+    await createDataSource(ds)
 })
 
 test("should return correct query result", async ({
