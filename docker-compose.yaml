@@ -26,15 +26,20 @@ services:
       GF_LOG_LEVEL: debug
       GF_DATAPROXY_LOGGING: 1
       GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: haohanyang-dynamodb-datasource
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:3000/api/health || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     networks:
       - dynamodb-datasource
-  
+
   localstack:
     container_name: dynamodb-datasource-localstack
     image: localstack/localstack
     ports:
       - 4566:4566 # LocalStack Gateway
-      - 127.0.0.1:4510-4559:4510-4559  # external services port range
     environment:
       - DEBUG=${DEBUG:-0}
       - SERVICES=dynamodb
