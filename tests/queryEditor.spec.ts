@@ -74,7 +74,6 @@ test("should return correct query result", async ({
     await editor.clear();
     await editor.fill("SELECT * FROM test");
 
-
     await panelEditPage.setVisualization('Table');
     await expect(panelEditPage.refreshPanel()).toBeOK();
     await expect(panelEditPage.panel.data).toContainText(["2", "1", "3"]);
