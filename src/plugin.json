@@ -7,12 +7,14 @@
   "backend": true,
   "executable": "gpx_dynamodb_datasource",
   "info": {
-    "description": "",
+    "description": "DynamoDB integration and data source",
     "author": {
       "name": "Haohan Yang"
     },
     "keywords": [
-      "datasource"
+      "datasource",
+      "dynamodb",
+      "aws"
     ],
     "logos": {
       "small": "img/logo.svg",
