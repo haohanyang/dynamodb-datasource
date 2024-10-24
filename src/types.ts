@@ -1,10 +1,10 @@
-import { AwsAuthDataSourceJsonData, AwsAuthDataSourceSecureJsonData } from '@grafana/aws-sdk';
-import { DataQuery } from '@grafana/schema';
+import { AwsAuthDataSourceJsonData, AwsAuthDataSourceSecureJsonData } from "@grafana/aws-sdk";
+import { DataQuery } from "@grafana/schema";
 
 export interface DynamoDBQuery extends DataQuery {
   queryText?: string;
   limit?: number
-  datetimeFields: Array<DatetimeField>
+  datetimeFields: DatetimeField[]
 }
 
 export const DEFAULT_QUERY: Partial<DynamoDBQuery> = {
