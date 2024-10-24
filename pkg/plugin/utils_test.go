@@ -140,7 +140,7 @@ func TestOutputToDataFrame(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		frame, err := OutputToDataFrame("test", output)
+		frame, err := OutputToDataFrame("test", output, make(map[string]DatetimeFormat))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -171,7 +171,7 @@ func TestOutputToDataFrame(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		frame, err := OutputToDataFrame("test", output)
+		frame, err := OutputToDataFrame("test", output, make(map[string]DatetimeFormat))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -201,7 +201,7 @@ func TestOutputToDataFrame(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		frame, err := OutputToDataFrame("test", output)
+		frame, err := OutputToDataFrame("test", output, make(map[string]DatetimeFormat))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -231,7 +231,7 @@ func TestOutputToDataFrame(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		frame, err := OutputToDataFrame("test", output)
+		frame, err := OutputToDataFrame("test", output, make(map[string]DatetimeFormat))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -258,7 +258,7 @@ func TestOutputToDataFrame(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		frame, err := OutputToDataFrame("test", output)
+		frame, err := OutputToDataFrame("test", output, make(map[string]DatetimeFormat))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -297,7 +297,7 @@ func TestOutputToDataFrame(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		frame, err := OutputToDataFrame("test", output)
+		frame, err := OutputToDataFrame("test", output, make(map[string]DatetimeFormat))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -335,7 +335,7 @@ func TestOutputToDataFrame(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		frame, err := OutputToDataFrame("test", output)
+		frame, err := OutputToDataFrame("test", output, make(map[string]DatetimeFormat))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -359,7 +359,7 @@ func TestOutputToDataFrame(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		frame, err := OutputToDataFrame("test", output)
+		frame, err := OutputToDataFrame("test", output, make(map[string]DatetimeFormat))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -383,7 +383,7 @@ func TestOutputToDataFrame(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		frame, err := OutputToDataFrame("test", output)
+		frame, err := OutputToDataFrame("test", output, make(map[string]DatetimeFormat))
 		if err != nil {
 			t.Fatal(err)
 		}

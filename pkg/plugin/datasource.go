@@ -129,7 +129,12 @@ func (d *Datasource) query(ctx context.Context, dynamoDBClient *dynamodb.DynamoD
 		return backend.ErrDataResponse(backend.StatusBadRequest, fmt.Sprintf("executes statement: %v", err.Error()))
 	}
 
-	frame, err := OutputToDataFrame(query.RefID, output)
+	dateFields := make(map[string]DatetimeFormat)
+	for _, k := range qm.DatetimeFields {
+		dateFields[k.Name] = k.Format
+	}
+
+	frame, err := OutputToDataFrame(query.RefID, output, dateFields)
 	if err != nil {
 		response.Error = err
 		return response
