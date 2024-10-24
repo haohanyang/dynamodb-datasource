@@ -18,6 +18,7 @@ type DatetimeFormat int
 const (
 	ISO8601 DatetimeFormat = iota
 	UnixTimestamp
+	Noop
 )
 
 type DynamoDBDataType int

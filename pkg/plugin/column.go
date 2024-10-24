@@ -3,6 +3,7 @@ package plugin
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -10,29 +11,50 @@ import (
 )
 
 type Column struct {
-	Name  string
-	Field *data.Field
+	Name     string
+	Field    *data.Field
+	DTFormat DatetimeFormat
 }
 
 func (c *Column) Type() data.FieldType {
 	return c.Field.Type()
 }
 
-func NewColumn(rowIndex int, name string, value *dynamodb.AttributeValue) (*Column, error) {
+func NewColumn(rowIndex int, name string, value *dynamodb.AttributeValue, datetimeFormat DatetimeFormat) (*Column, error) {
 	var field *data.Field
 
 	if value.S != nil {
 		// string
-		field = data.NewField(name, nil, make([]*string, rowIndex+1))
-		field.Set(rowIndex, value.S)
+		if datetimeFormat == ISO8601 {
+			// Convert ISO8601 string to time.Time
+			t, err := time.Parse(time.RFC3339, *value.S)
+			if err != nil {
+				return nil, err
+			}
+
+			field = data.NewField(name, nil, make([]*time.Time, rowIndex+1))
+			field.Set(rowIndex, &t)
+
+		} else {
+			field = data.NewField(name, nil, make([]*string, rowIndex+1))
+			field.Set(rowIndex, value.S)
+		}
+
 	} else if value.N != nil {
 		i, f, err := parseNumber(*value.N)
 		if err != nil {
 			return nil, err
 		} else if i != nil {
 			// int64
-			field = data.NewField(name, nil, make([]*int64, rowIndex+1))
-			field.Set(rowIndex, i)
+			if datetimeFormat == UnixTimestamp {
+				t := time.Unix(*i, 0)
+				field = data.NewField(name, nil, make([]*time.Time, rowIndex+1))
+				field.Set(rowIndex, &t)
+			} else {
+				field = data.NewField(name, nil, make([]*int64, rowIndex+1))
+				field.Set(rowIndex, i)
+			}
+
 		} else {
 			// float64
 			field = data.NewField(name, nil, make([]*float64, rowIndex+1))
@@ -79,7 +101,7 @@ func NewColumn(rowIndex int, name string, value *dynamodb.AttributeValue) (*Colu
 		field = data.NewField(name, nil, make([]*string, rowIndex+1))
 		field.Set(rowIndex, aws.String("[BS]"))
 	}
-	return &Column{Name: name, Field: field}, nil
+	return &Column{Name: name, Field: field, DTFormat: datetimeFormat}, nil
 }
 
 func (c *Column) Size() int {
@@ -88,22 +110,43 @@ func (c *Column) Size() int {
 
 func (c *Column) AppendValue(value *dynamodb.AttributeValue) error {
 	if value.S != nil {
-		if c.Type() != data.FieldTypeNullableString {
-			return fmt.Errorf("field %s should have type %s, but got %s", c.Name, c.Type().ItemTypeString(), "S")
+		if c.DTFormat == ISO8601 {
+			if c.Type() != data.FieldTypeNullableTime {
+				return fmt.Errorf("field %s should have type %s, but got %s", c.Name, c.Type().ItemTypeString(), "S")
+			}
+			t, err := time.Parse(time.RFC3339, *value.S)
+			if err != nil {
+				return err
+			}
+			c.Field.Append(&t)
+
+		} else {
+			if c.Type() != data.FieldTypeNullableString {
+				return fmt.Errorf("field %s should have type %s, but got %s", c.Name, c.Type().ItemTypeString(), "S")
+			}
+			c.Field.Append(value.S)
 		}
-		c.Field.Append(value.S)
+
 	} else if value.N != nil {
 		i, f, err := parseNumber(*value.N)
 		if err != nil {
 			return err
 		} else if i != nil {
 			// int64
-			if c.Type() == data.FieldTypeNullableInt64 {
-				c.Field.Append(i)
-			} else if c.Type() == data.FieldTypeNullableFloat64 {
-				c.Field.Append(aws.Float64(float64(*i)))
+			if c.DTFormat == UnixTimestamp {
+				if c.Type() != data.FieldTypeNullableTime {
+					return fmt.Errorf("field %s should have type %s, but got %s", c.Name, c.Type().ItemTypeString(), "N")
+				}
+				t := time.Unix(*i, 0)
+				c.Field.Append(t)
 			} else {
-				return fmt.Errorf("field %s should have type %s, but got %s", c.Name, c.Type().ItemTypeString(), "N")
+				if c.Type() == data.FieldTypeNullableInt64 {
+					c.Field.Append(i)
+				} else if c.Type() == data.FieldTypeNullableFloat64 {
+					c.Field.Append(aws.Float64(float64(*i)))
+				} else {
+					return fmt.Errorf("field %s should have type %s, but got %s", c.Name, c.Type().ItemTypeString(), "N")
+				}
 			}
 
 		} else {

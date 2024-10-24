@@ -92,13 +92,18 @@ func OutputToDataFrame(dataFrameName string, output *dynamodb.ExecuteStatementOu
 	columns := make(map[string]*Column)
 	for rowIndex, row := range output.Items {
 		for name, value := range row {
+			datetimeFormat := Noop
+			if df, ok := datetimeFields[name]; ok {
+				datetimeFormat = df
+			}
+
 			if c, ok := columns[name]; ok {
 				err := c.AppendValue(value)
 				if err != nil {
 					return nil, err
 				}
 			} else {
-				newColumn, err := NewColumn(rowIndex, name, value)
+				newColumn, err := NewColumn(rowIndex, name, value, datetimeFormat)
 				if err != nil {
 					return nil, err
 				}
