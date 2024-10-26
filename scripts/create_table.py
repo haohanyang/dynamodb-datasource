@@ -1,4 +1,8 @@
+import time
 import boto3
+from datetime import datetime
+from decimal import Decimal
+from pprint import pprint
 
 TABLE_NAME = "test"
 
@@ -27,44 +31,52 @@ def get_table(table_name: str):
 
 def create_table(table_name: str = TABLE_NAME):
     client = get_client()
-    client.delete_table(TableName=table_name)
+
+    tables = client.list_tables()["TableNames"]
+    if table_name in tables:
+        client.delete_table(TableName=table_name)
+
     client.create_table(
         TableName=table_name,
-        KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+        KeySchema=[
+            {"AttributeName": "id", "KeyType": "HASH"},
+            {"AttributeName": "sid", "KeyType": "RANGE"},
+        ],
         AttributeDefinitions=[
             {
                 "AttributeName": "id",
+                "AttributeType": "N",
+            },
+            {
+                "AttributeName": "sid",
                 "AttributeType": "S",
             },
-            # {"AttributeName": "myString", "AttributeType": "S"},
-            # {"AttributeName": "myNumber", "AttributeType": "N"},
-            # {"AttributeName": "myBinary", "AttributeType": "B"},
-            # {"AttributeName": "myBool", "AttributeType": "BOOL"},
-            # {"AttributeName": "myList", "AttributeType": "L"},
-            # {"AttributeName": "myMap", "AttributeType": "M"},
-            # {"AttributeName": "myStringSet", "AttributeType": "SS"},
-            # {"AttributeName": "myNumberSet", "AttributeType": "NS"},
         ],
         BillingMode="PAY_PER_REQUEST",
     )
 
 
 def put_item(table_name: str = TABLE_NAME):
-    client = get_client()
-    client.put_item(
-        TableName=table_name,
+    table = get_table(table_name)
+    table.put_item(
         Item={
-            "id": {"S": "1"},
-            "myString": {"S": "Hello, DynamoDB!"},
-            "myNumber": {"N": "123.45"},
-            "myBinary": {"B": b"some_binary_data"},
-            "myBool": {"BOOL": True},
-            "myList": {"L": [{"S": "item1"}, {"N": "2"}, {"BOOL": False}]},
-            "myMap": {"M": {"subkey1": {"S": "value1"}, "subkey2": {"N": "99"}}},
-            "myStringSet": {"SS": ["value1", "value2", "value3"]},
-            "myNumberSet": {"NS": ["1.1", "2.2", "3.3"]},
+            "id": 1,
+            "sid": "A",
+            "myString": "Hello, DynamoDB!",
+            "myFloat": Decimal("123.45"),
+            "myInt": 123,
+            "myBinary": b"some_binary_data",
+            "myBool": True,
+            "myList": ["item1", 2, False],
+            "myMap": {"subkey1": "value1", "subkey2": 99},
+            "myStringSet": set(["value1", "value2", "value3"]),
+            "myNumberSet": set([Decimal("1.1"), 2, Decimal("3.3")]),
+            "myISODate": datetime.now().isoformat(),
+            "myUnixDate": Decimal(str(time.mktime(datetime.now().timetuple()))),
         }
     )
+    item = table.get_item(Key={"id": 1, "sid": "A"})["Item"]
+    pprint(item)
 
 
 create_table()
