@@ -46,8 +46,14 @@ func NewColumn(rowIndex int, name string, value *dynamodb.AttributeValue, dateti
 			return nil, err
 		} else if i != nil {
 			// int64
-			if datetimeFormat == UnixTimestamp {
+			if datetimeFormat == UnixTimestampSeconds {
 				t := time.Unix(*i, 0)
+				field = data.NewField(name, nil, make([]*time.Time, rowIndex+1))
+				field.Set(rowIndex, &t)
+			} else if datetimeFormat == UnixTimestampMiniseconds {
+				seconds := *i / 1000
+				nanoseconds := (*i % 1000) * 1000000
+				t := time.Unix(seconds, nanoseconds)
 				field = data.NewField(name, nil, make([]*time.Time, rowIndex+1))
 				field.Set(rowIndex, &t)
 			} else {
@@ -133,12 +139,21 @@ func (c *Column) AppendValue(value *dynamodb.AttributeValue) error {
 			return err
 		} else if i != nil {
 			// int64
-			if c.DTFormat == UnixTimestamp {
+			if c.DTFormat == UnixTimestampSeconds {
 				if c.Type() != data.FieldTypeNullableTime {
 					return fmt.Errorf("field %s should have type %s, but got %s", c.Name, c.Type().ItemTypeString(), "N")
 				}
 				t := time.Unix(*i, 0)
-				c.Field.Append(t)
+				c.Field.Append(&t)
+			} else if c.DTFormat == UnixTimestampMiniseconds {
+				if c.Type() != data.FieldTypeNullableTime {
+					return fmt.Errorf("field %s should have type %s, but got %s", c.Name, c.Type().ItemTypeString(), "N")
+				}
+
+				seconds := *i / 1000
+				nanoseconds := (*i % 1000) * 1000000
+				t := time.Unix(seconds, nanoseconds)
+				c.Field.Append(&t)
 			} else {
 				if c.Type() == data.FieldTypeNullableInt64 {
 					c.Field.Append(i)

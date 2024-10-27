@@ -15,9 +15,14 @@ const datetimeFormatOptions: Array<SelectableValue<DatetimeFormat>> = [
     description: "Represents the date and time in UTC, e.g., 2023-05-23T12:34:56Z"
   },
   {
-    label: "Unix timestamp",
-    value: DatetimeFormat.UnixTimestamp,
+    label: "Unix timestamp (seconds)",
+    value: DatetimeFormat.UnixTimestampSeconds,
     description: "The number of seconds that have elapsed since January 1, 1970 (also known as the Unix epoch), e.g., 1674512096"
+  },
+  {
+    label: "Unix timestamp (miliseconds)",
+    value: DatetimeFormat.UnixTimestampMiniseconds,
+    description: "The number of miliseconds that have elapsed since January 1, 1970 (also known as the Unix epoch), e.g., 1674512096000"
   }
 ]
 
