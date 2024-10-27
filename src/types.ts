@@ -19,11 +19,11 @@ export interface DynamoDBDataSourceOptions extends AwsAuthDataSourceJsonData {
 export interface DynamoDBDataSourceSecureJsonData extends AwsAuthDataSourceSecureJsonData { }
 
 export enum DatetimeFormat {
-  ISO8601 = 0,
-  UnixTimestampSeconds,
-  UnixTimestampMiniseconds
+  UnixTimestampSeconds = 1,
+  UnixTimestampMiniseconds = 2,
+  CustomFormat = 3
 }
 export interface DatetimeField {
   name: string
-  format: DatetimeFormat
+  format: string
 }

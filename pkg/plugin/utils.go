@@ -88,11 +88,11 @@ func PrintDataFrame(dataFrame *data.Frame) {
 	}
 }
 
-func OutputToDataFrame(dataFrameName string, output *dynamodb.ExecuteStatementOutput, datetimeFields map[string]DatetimeFormat) (*data.Frame, error) {
+func OutputToDataFrame(dataFrameName string, output *dynamodb.ExecuteStatementOutput, datetimeFields map[string]string) (*data.Frame, error) {
 	columns := make(map[string]*Column)
 	for rowIndex, row := range output.Items {
 		for name, value := range row {
-			datetimeFormat := Noop
+			datetimeFormat := ""
 			if df, ok := datetimeFields[name]; ok {
 				datetimeFormat = df
 			}

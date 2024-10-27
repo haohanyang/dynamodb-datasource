@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -13,21 +14,20 @@ import (
 type Column struct {
 	Name     string
 	Field    *data.Field
-	DTFormat DatetimeFormat
+	DTFormat string
 }
 
 func (c *Column) Type() data.FieldType {
 	return c.Field.Type()
 }
 
-func NewColumn(rowIndex int, name string, value *dynamodb.AttributeValue, datetimeFormat DatetimeFormat) (*Column, error) {
+func NewColumn(rowIndex int, name string, value *dynamodb.AttributeValue, datetimeFormat string) (*Column, error) {
 	var field *data.Field
 
 	if value.S != nil {
 		// string
-		if datetimeFormat == ISO8601 {
-			// Convert ISO8601 string to time.Time
-			t, err := time.Parse(time.RFC3339, *value.S)
+		if datetimeFormat != "" && datetimeFormat != UnixTimestampMiniseconds && datetimeFormat != UnixTimestampSeconds {
+			t, err := time.Parse(datetimeFormat, *value.S)
 			if err != nil {
 				return nil, err
 			}
@@ -56,6 +56,8 @@ func NewColumn(rowIndex int, name string, value *dynamodb.AttributeValue, dateti
 				t := time.Unix(seconds, nanoseconds)
 				field = data.NewField(name, nil, make([]*time.Time, rowIndex+1))
 				field.Set(rowIndex, &t)
+			} else if datetimeFormat != "" {
+				return nil, errors.New("invalid datetime format")
 			} else {
 				field = data.NewField(name, nil, make([]*int64, rowIndex+1))
 				field.Set(rowIndex, i)
@@ -116,11 +118,11 @@ func (c *Column) Size() int {
 
 func (c *Column) AppendValue(value *dynamodb.AttributeValue) error {
 	if value.S != nil {
-		if c.DTFormat == ISO8601 {
+		if c.DTFormat != "" && c.DTFormat != UnixTimestampMiniseconds && c.DTFormat != UnixTimestampSeconds {
 			if c.Type() != data.FieldTypeNullableTime {
 				return fmt.Errorf("field %s should have type %s, but got %s", c.Name, c.Type().ItemTypeString(), "S")
 			}
-			t, err := time.Parse(time.RFC3339, *value.S)
+			t, err := time.Parse(c.DTFormat, *value.S)
 			if err != nil {
 				return err
 			}
@@ -154,6 +156,8 @@ func (c *Column) AppendValue(value *dynamodb.AttributeValue) error {
 				nanoseconds := (*i % 1000) * 1000000
 				t := time.Unix(seconds, nanoseconds)
 				c.Field.Append(&t)
+			} else if c.DTFormat != "" {
+				return errors.New("invalid datetime format")
 			} else {
 				if c.Type() == data.FieldTypeNullableInt64 {
 					c.Field.Append(i)

@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -140,7 +141,7 @@ func TestOutputToDataFrame(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		frame, err := OutputToDataFrame("test", output, make(map[string]DatetimeFormat))
+		frame, err := OutputToDataFrame("test", output, make(map[string]string))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -171,7 +172,7 @@ func TestOutputToDataFrame(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		frame, err := OutputToDataFrame("test", output, make(map[string]DatetimeFormat))
+		frame, err := OutputToDataFrame("test", output, make(map[string]string))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -201,7 +202,7 @@ func TestOutputToDataFrame(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		frame, err := OutputToDataFrame("test", output, make(map[string]DatetimeFormat))
+		frame, err := OutputToDataFrame("test", output, make(map[string]string))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -231,7 +232,7 @@ func TestOutputToDataFrame(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		frame, err := OutputToDataFrame("test", output, make(map[string]DatetimeFormat))
+		frame, err := OutputToDataFrame("test", output, make(map[string]string))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -258,7 +259,7 @@ func TestOutputToDataFrame(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		frame, err := OutputToDataFrame("test", output, make(map[string]DatetimeFormat))
+		frame, err := OutputToDataFrame("test", output, make(map[string]string))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -297,7 +298,7 @@ func TestOutputToDataFrame(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		frame, err := OutputToDataFrame("test", output, make(map[string]DatetimeFormat))
+		frame, err := OutputToDataFrame("test", output, make(map[string]string))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -335,7 +336,7 @@ func TestOutputToDataFrame(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		frame, err := OutputToDataFrame("test", output, make(map[string]DatetimeFormat))
+		frame, err := OutputToDataFrame("test", output, make(map[string]string))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -359,7 +360,7 @@ func TestOutputToDataFrame(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		frame, err := OutputToDataFrame("test", output, make(map[string]DatetimeFormat))
+		frame, err := OutputToDataFrame("test", output, make(map[string]string))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -383,13 +384,107 @@ func TestOutputToDataFrame(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		frame, err := OutputToDataFrame("test", output, make(map[string]DatetimeFormat))
+		frame, err := OutputToDataFrame("test", output, make(map[string]string))
 		if err != nil {
 			t.Fatal(err)
 		}
 		field := frame.Fields[0]
 		assertEqual(t, field.Name, "myNS")
 		assertEqual(t, field.Type(), data.FieldTypeNullableJSON)
+	})
+
+	t.Run("Datetime Unix seconds", func(t *testing.T) {
+		rows := []DataRow{
+			{"myDate": &dynamodb.AttributeValue{
+				N: aws.String("1730070176"),
+			}},
+			{},
+			{"myDate": &dynamodb.AttributeValue{
+				N: aws.String("1730070193"),
+			}}}
+
+		output, err := outputFromItems(ctx, client, testTableName, rows, "myDate")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		frame, err := OutputToDataFrame("test", output, map[string]string{
+			"myDate": UnixTimestampSeconds})
+		if err != nil {
+			t.Fatal(err)
+		}
+		field := frame.Fields[0]
+		assertEqual(t, field.Name, "myDate")
+		assertEqual(t, field.Type(), data.FieldTypeNullableTime)
+		v, _ := field.ConcreteAt(0)
+		dt := v.(time.Time)
+		assertEqual(t, dt.Year(), 2024)
+		assertEqual(t, dt.Month().String(), "October")
+		assertEqual(t, dt.Day(), 27)
+	})
+
+	t.Run("Datetime Unix miliseconds", func(t *testing.T) {
+		rows := []DataRow{
+			{"myDate": &dynamodb.AttributeValue{
+				N: aws.String("1730070554000"),
+			}},
+			{},
+			{"myDate": &dynamodb.AttributeValue{
+				N: aws.String("1730070568000"),
+			}}}
+
+		output, err := outputFromItems(ctx, client, testTableName, rows, "myDate")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		frame, err := OutputToDataFrame("test", output, map[string]string{
+			"myDate": UnixTimestampMiniseconds})
+		if err != nil {
+			t.Fatal(err)
+		}
+		field := frame.Fields[0]
+		assertEqual(t, field.Name, "myDate")
+		assertEqual(t, field.Type(), data.FieldTypeNullableTime)
+		v, _ := field.ConcreteAt(0)
+		dt := v.(time.Time)
+		assertEqual(t, dt.Year(), 2024)
+		assertEqual(t, dt.Month().String(), "October")
+		assertEqual(t, dt.Day(), 27)
+	})
+
+	t.Run("Datetime Custom format ISO8601", func(t *testing.T) {
+
+		rows := []DataRow{
+			{"myDate": &dynamodb.AttributeValue{
+				S: aws.String("2024-10-27T23:10:42.951Z"),
+			}},
+			{},
+			{"myDate": &dynamodb.AttributeValue{
+				S: aws.String("2024-10-27T23:10:49.552Z"),
+			}}}
+
+		output, err := outputFromItems(ctx, client, testTableName, rows, "myDate")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		frame, err := OutputToDataFrame("test", output, map[string]string{
+			"myDate": "2006-01-02T15:04:05.999Z"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		field := frame.Fields[0]
+		assertEqual(t, field.Name, "myDate")
+		assertEqual(t, field.Type(), data.FieldTypeNullableTime)
+		v, _ := field.ConcreteAt(0)
+		dt := v.(time.Time)
+		assertEqual(t, dt.Year(), 2024)
+		assertEqual(t, dt.Month().String(), "October")
+		assertEqual(t, dt.Day(), 27)
+		assertEqual(t, dt.Hour(), 23)
+		assertEqual(t, dt.Minute(), 10)
+		assertEqual(t, dt.Second(), 42)
 	})
 
 }

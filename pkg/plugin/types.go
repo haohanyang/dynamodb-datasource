@@ -10,16 +10,12 @@ type QueryModel struct {
 
 type DatetimeField struct {
 	Name   string
-	Format DatetimeFormat
+	Format string
 }
 
-type DatetimeFormat int
-
-const (
-	ISO8601 DatetimeFormat = iota
-	UnixTimestampSeconds
-	UnixTimestampMiniseconds
-	Noop
+var (
+	UnixTimestampSeconds     = "unixs"
+	UnixTimestampMiniseconds = "unixms"
 )
 
 type DynamoDBDataType int

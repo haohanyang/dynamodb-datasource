@@ -10,11 +10,6 @@ type Props = QueryEditorProps<DataSource, DynamoDBQuery, DynamoDBDataSourceOptio
 
 const datetimeFormatOptions: Array<SelectableValue<DatetimeFormat>> = [
   {
-    label: "ISO 8601",
-    value: DatetimeFormat.ISO8601,
-    description: "Represents the date and time in UTC, e.g., 2023-05-23T12:34:56Z"
-  },
-  {
     label: "Unix timestamp (seconds)",
     value: DatetimeFormat.UnixTimestampSeconds,
     description: "The number of seconds that have elapsed since January 1, 1970 (also known as the Unix epoch), e.g., 1674512096"
@@ -23,13 +18,19 @@ const datetimeFormatOptions: Array<SelectableValue<DatetimeFormat>> = [
     label: "Unix timestamp (miliseconds)",
     value: DatetimeFormat.UnixTimestampMiniseconds,
     description: "The number of miliseconds that have elapsed since January 1, 1970 (also known as the Unix epoch), e.g., 1674512096000"
-  }
+  },
+  {
+    label: "Custom format",
+    value: DatetimeFormat.CustomFormat,
+    description: "User-defined format based on the specific timestamp (January 2, 15:04:05, 2006, in time zone seven hours west of GMT), e.g. \"2006-01-02T15:04:05Z07:00\"(RFC3339), \"Mon, 02 Jan 2006 15:04:05 MST\"(RFC1123), \"02 Jan 06 15:04 MST\"(RFC822)"
+  },
 ]
 
 export function QueryEditor({ query, onChange }: Props) {
   const codeEditorRef = useRef<monacoType.editor.IStandaloneCodeEditor | null>(null);
   const [datetimeFieldInput, setDatetimeFieldInput] = useState<string>("")
-  const [datetimeFormatInput, setDatetimeFormatInput] = useState<DatetimeFormat>(DatetimeFormat.ISO8601)
+  const [datetimeFormatOption, setDatetimeFormatOption] = useState<DatetimeFormat>(DatetimeFormat.UnixTimestampSeconds)
+  const [customDatetimeFormatInput, setCustomDatetimeFormatInput] = useState<string>("")
 
   const onQueryTextChange = (text: string) => {
     onChange({ ...query, queryText: text });
@@ -53,13 +54,20 @@ export function QueryEditor({ query, onChange }: Props) {
     }
   };
 
-  const onAddDatetimeField = (name: string, format: DatetimeFormat) => {
-    if (name) {
+  const onAddDatetimeField = (name: string, option: DatetimeFormat, customFormat: string) => {
+    let format = customFormat
+    if (option == DatetimeFormat.UnixTimestampMiniseconds) {
+      format = "unixms"
+    } else if (option == DatetimeFormat.UnixTimestampSeconds) {
+      format = "unixs"
+    }
+    if (name && format) {
       onChange({
         ...query,
         datetimeFields: [...query.datetimeFields, { name: name, format: format }]
       });
       setDatetimeFieldInput("")
+      setCustomDatetimeFormatInput("")
     }
   }
 
@@ -84,13 +92,15 @@ export function QueryEditor({ query, onChange }: Props) {
           <Input value={datetimeFieldInput} onChange={e => setDatetimeFieldInput(e.currentTarget.value)} />
         </InlineField>
         <InlineField label="Format">
-          <Select options={datetimeFormatOptions} value={datetimeFormatInput} width={30}
-            onChange={sv => sv.value && setDatetimeFormatInput(sv.value)}></Select>
+          <Select options={datetimeFormatOptions} value={datetimeFormatOption} width={30}
+            onChange={sv => sv.value && setDatetimeFormatOption(sv.value)}></Select>
         </InlineField>
-        <Button onClick={() => onAddDatetimeField(datetimeFieldInput, datetimeFormatInput)}>Add</Button>
+        {datetimeFormatOption == DatetimeFormat.CustomFormat && <InlineField label="Custom Format">
+          <Input label="Custom format" value={customDatetimeFormatInput} onChange={e => setCustomDatetimeFormatInput(e.currentTarget.value)} />
+        </InlineField>}
+        <Button onClick={() => onAddDatetimeField(datetimeFieldInput, datetimeFormatOption, customDatetimeFormatInput)}>Add</Button>
       </InlineFieldRow>
       <TagList className="datetime-fields" tags={query.datetimeFields.map(f => f.name)} onClick={(n, _) => onRemoveDatetimeField(n)} />
-
       <Field label="Query Text" description="The PartiQL statement representing the operation to run">
         <CodeEditor
           onBlur={onQueryTextChange}

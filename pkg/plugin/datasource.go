@@ -129,7 +129,7 @@ func (d *Datasource) query(ctx context.Context, dynamoDBClient *dynamodb.DynamoD
 		return backend.ErrDataResponse(backend.StatusBadRequest, fmt.Sprintf("executes statement: %v", err.Error()))
 	}
 
-	dateFields := make(map[string]DatetimeFormat)
+	dateFields := make(map[string]string)
 	for _, k := range qm.DatetimeFields {
 		dateFields[k.Name] = k.Format
 	}
