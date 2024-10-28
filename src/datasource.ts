@@ -1,6 +1,6 @@
-import { DataSourceInstanceSettings, CoreApp, ScopedVars } from '@grafana/data';
+import { DataSourceInstanceSettings, CoreApp, ScopedVars, DataQueryRequest, DataQueryResponse } from '@grafana/data';
 import { DataSourceWithBackend, getTemplateSrv } from '@grafana/runtime';
-
+import { Observable } from "rxjs";
 import { DynamoDBQuery, DynamoDBDataSourceOptions, DEFAULT_QUERY } from './types';
 
 export class DataSource extends DataSourceWithBackend<DynamoDBQuery, DynamoDBDataSourceOptions> {
@@ -22,5 +22,17 @@ export class DataSource extends DataSourceWithBackend<DynamoDBQuery, DynamoDBDat
   filterQuery(query: DynamoDBQuery): boolean {
     // if no query has been provided, prevent the query from being executed
     return !!query.queryText;
+  }
+
+  query(request: DataQueryRequest<DynamoDBQuery>): Observable<DataQueryResponse> {
+    const queries = request.targets.map((query) => {
+      return {
+        ...query,
+        queryText:
+          query.queryText?.replaceAll(/\$from/g, Math.floor(request.range.from.toDate().getTime() / 1000).toString())
+            .replaceAll(/\$to/g, Math.floor(request.range.to.toDate().getTime() / 1000).toString())
+      };
+    });
+    return super.query({ ...request, targets: queries });
   }
 }
