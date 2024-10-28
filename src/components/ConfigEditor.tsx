@@ -1,7 +1,7 @@
 import React from "react";
 import { ConnectionConfig } from "@grafana/aws-sdk";
 import { DataSourcePluginOptionsEditorProps } from "@grafana/data";
-import { DynamoDBDataSourceOptions, DynamoDBDataSourceSecureJsonData } from "../types"
+import { DynamoDBDataSourceOptions, DynamoDBDataSourceSecureJsonData } from "../types";
 import { Field, Input } from "@grafana/ui";
 
 interface Props extends DataSourcePluginOptionsEditorProps<DynamoDBDataSourceOptions, DynamoDBDataSourceSecureJsonData> { }
@@ -44,8 +44,8 @@ export function ConfigEditor(props: Props) {
         ...props.options.jsonData,
         connectionTestTable: e.currentTarget.value
       }
-    })
-  }
+    });
+  };
 
   return (
     <div className="width-30">

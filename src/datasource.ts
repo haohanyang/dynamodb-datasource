@@ -1,7 +1,7 @@
-import { DataSourceInstanceSettings, CoreApp, ScopedVars, DataQueryRequest, DataQueryResponse } from '@grafana/data';
-import { DataSourceWithBackend, getTemplateSrv } from '@grafana/runtime';
+import { DataSourceInstanceSettings, CoreApp, ScopedVars, DataQueryRequest, DataQueryResponse } from "@grafana/data";
+import { DataSourceWithBackend, getTemplateSrv } from "@grafana/runtime";
 import { Observable } from "rxjs";
-import { DynamoDBQuery, DynamoDBDataSourceOptions, DEFAULT_QUERY } from './types';
+import { DynamoDBQuery, DynamoDBDataSourceOptions, DEFAULT_QUERY } from "./types";
 
 export class DataSource extends DataSourceWithBackend<DynamoDBQuery, DynamoDBDataSourceOptions> {
   constructor(instanceSettings: DataSourceInstanceSettings<DynamoDBDataSourceOptions>) {

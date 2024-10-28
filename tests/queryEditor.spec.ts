@@ -1,19 +1,19 @@
-import { CreateTableCommand, DeleteTableCommand, DynamoDBClient, ListTablesCommand, PutItemCommand } from '@aws-sdk/client-dynamodb';
-import { test, expect } from '@grafana/plugin-e2e';
+import { CreateTableCommand, DeleteTableCommand, DynamoDBClient, ListTablesCommand, PutItemCommand } from "@aws-sdk/client-dynamodb";
+import { test, expect } from "@grafana/plugin-e2e";
 
 test.beforeAll(async function ({ createDataSource, readProvisionedDataSource }) {
-    process.env.AWS_ACCESS_KEY_ID = "test"
-    process.env.AWS_SECRET_ACCESS_KEY = "test"
+    process.env.AWS_ACCESS_KEY_ID = "test";
+    process.env.AWS_SECRET_ACCESS_KEY = "test";
     const client = new DynamoDBClient({
         endpoint: "http://localhost:4566",
         region: "us-east-1",
     });
 
-    const res = await client.send(new ListTablesCommand())
+    const res = await client.send(new ListTablesCommand());
     if (res.TableNames && res.TableNames.includes("test")) {
         await client.send(new DeleteTableCommand({
             TableName: "test"
-        }))
+        }));
     }
 
     await client.send(new CreateTableCommand({
@@ -34,32 +34,32 @@ test.beforeAll(async function ({ createDataSource, readProvisionedDataSource }) 
             ReadCapacityUnits: 1,
             WriteCapacityUnits: 1,
         },
-    }))
+    }));
 
     await client.send(new PutItemCommand({
         TableName: "test",
         Item: {
             id: { N: "1" },
         }
-    }))
+    }));
 
     await client.send(new PutItemCommand({
         TableName: "test",
         Item: {
             id: { N: "2" },
         }
-    }))
+    }));
 
     await client.send(new PutItemCommand({
         TableName: "test",
         Item: {
             id: { N: "3" },
         }
-    }))
+    }));
 
     const ds = await readProvisionedDataSource({ fileName: "e2e.yml" });
-    await createDataSource(ds)
-})
+    await createDataSource(ds);
+});
 
 test("should return correct query result", async ({
     panelEditPage,
@@ -77,7 +77,7 @@ test("should return correct query result", async ({
     await editor.clear();
     await editor.fill("SELECT * FROM test");
 
-    await panelEditPage.setVisualization('Table');
+    await panelEditPage.setVisualization("Table");
     await expect(panelEditPage.refreshPanel()).toBeOK();
     await expect(panelEditPage.panel.data).toContainText(["2", "1", "3"]);
 });

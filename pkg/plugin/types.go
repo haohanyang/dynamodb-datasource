@@ -14,8 +14,8 @@ type DatetimeField struct {
 }
 
 var (
-	UnixTimestampSeconds     = "unixs"
-	UnixTimestampMiniseconds = "unixms"
+	UnixTimestampSeconds     = "1"
+	UnixTimestampMiniseconds = "2"
 )
 
 type DynamoDBDataType int
