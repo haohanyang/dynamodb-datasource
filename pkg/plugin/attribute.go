@@ -11,17 +11,17 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
 
-type Column struct {
+type Attribute struct {
 	Name     string
-	Field    *data.Field
-	DTFormat string
+	Value    *data.Field
+	TsFormat string
 }
 
-func (c *Column) Type() data.FieldType {
-	return c.Field.Type()
+func (c *Attribute) Type() data.FieldType {
+	return c.Value.Type()
 }
 
-func NewColumn(rowIndex int, name string, value *dynamodb.AttributeValue, datetimeFormat string) (*Column, error) {
+func NewAttribute(rowIndex int, name string, value *dynamodb.AttributeValue, datetimeFormat string) (*Attribute, error) {
 	var field *data.Field
 
 	if value.S != nil {
@@ -109,30 +109,30 @@ func NewColumn(rowIndex int, name string, value *dynamodb.AttributeValue, dateti
 		field = data.NewField(name, nil, make([]*string, rowIndex+1))
 		field.Set(rowIndex, aws.String("[BS]"))
 	}
-	return &Column{Name: name, Field: field, DTFormat: datetimeFormat}, nil
+	return &Attribute{Name: name, Value: field, TsFormat: datetimeFormat}, nil
 }
 
-func (c *Column) Size() int {
-	return c.Field.Len()
+func (c *Attribute) Size() int {
+	return c.Value.Len()
 }
 
-func (c *Column) AppendValue(value *dynamodb.AttributeValue) error {
+func (c *Attribute) Append(value *dynamodb.AttributeValue) error {
 	if value.S != nil {
-		if c.DTFormat != "" && c.DTFormat != UnixTimestampMiniseconds && c.DTFormat != UnixTimestampSeconds {
+		if c.TsFormat != "" && c.TsFormat != UnixTimestampMiniseconds && c.TsFormat != UnixTimestampSeconds {
 			if c.Type() != data.FieldTypeNullableTime {
 				return fmt.Errorf("field %s should have type %s, but got %s", c.Name, c.Type().ItemTypeString(), "S")
 			}
-			t, err := time.Parse(c.DTFormat, *value.S)
+			t, err := time.Parse(c.TsFormat, *value.S)
 			if err != nil {
 				return err
 			}
-			c.Field.Append(&t)
+			c.Value.Append(&t)
 
 		} else {
 			if c.Type() != data.FieldTypeNullableString {
 				return fmt.Errorf("field %s should have type %s, but got %s", c.Name, c.Type().ItemTypeString(), "S")
 			}
-			c.Field.Append(value.S)
+			c.Value.Append(value.S)
 		}
 
 	} else if value.N != nil {
@@ -141,13 +141,13 @@ func (c *Column) AppendValue(value *dynamodb.AttributeValue) error {
 			return err
 		} else if i != nil {
 			// int64
-			if c.DTFormat == UnixTimestampSeconds {
+			if c.TsFormat == UnixTimestampSeconds {
 				if c.Type() != data.FieldTypeNullableTime {
 					return fmt.Errorf("field %s should have type %s, but got %s", c.Name, c.Type().ItemTypeString(), "N")
 				}
 				t := time.Unix(*i, 0)
-				c.Field.Append(&t)
-			} else if c.DTFormat == UnixTimestampMiniseconds {
+				c.Value.Append(&t)
+			} else if c.TsFormat == UnixTimestampMiniseconds {
 				if c.Type() != data.FieldTypeNullableTime {
 					return fmt.Errorf("field %s should have type %s, but got %s", c.Name, c.Type().ItemTypeString(), "N")
 				}
@@ -155,14 +155,14 @@ func (c *Column) AppendValue(value *dynamodb.AttributeValue) error {
 				seconds := *i / 1000
 				nanoseconds := (*i % 1000) * 1000000
 				t := time.Unix(seconds, nanoseconds)
-				c.Field.Append(&t)
-			} else if c.DTFormat != "" {
+				c.Value.Append(&t)
+			} else if c.TsFormat != "" {
 				return errors.New("invalid datetime format")
 			} else {
 				if c.Type() == data.FieldTypeNullableInt64 {
-					c.Field.Append(i)
+					c.Value.Append(i)
 				} else if c.Type() == data.FieldTypeNullableFloat64 {
-					c.Field.Append(aws.Float64(float64(*i)))
+					c.Value.Append(aws.Float64(float64(*i)))
 				} else {
 					return fmt.Errorf("field %s should have type %s, but got %s", c.Name, c.Type().ItemTypeString(), "N")
 				}
@@ -171,20 +171,20 @@ func (c *Column) AppendValue(value *dynamodb.AttributeValue) error {
 		} else {
 			// float64
 			if c.Type() == data.FieldTypeNullableFloat64 {
-				c.Field.Append(f)
+				c.Value.Append(f)
 			} else if c.Type() == data.FieldTypeNullableInt64 {
 
 				// Convert all previous *int64 values to *float64
-				float64Values := make([]*float64, c.Field.Len()+1)
-				for i := 0; i < c.Field.Len(); i++ {
-					cv, ok := c.Field.ConcreteAt(i)
+				float64Values := make([]*float64, c.Value.Len()+1)
+				for i := 0; i < c.Value.Len(); i++ {
+					cv, ok := c.Value.ConcreteAt(i)
 					if ok {
 						float64Values[i] = aws.Float64(float64(cv.(int64)))
 					}
 				}
 
-				float64Values[c.Field.Len()] = f
-				c.Field = data.NewField(c.Name, nil, float64Values)
+				float64Values[c.Value.Len()] = f
+				c.Value = data.NewField(c.Name, nil, float64Values)
 			} else {
 				return fmt.Errorf("field %s should have type %s, but got %s", c.Name, c.Type().ItemTypeString(), "N")
 			}
@@ -193,14 +193,14 @@ func (c *Column) AppendValue(value *dynamodb.AttributeValue) error {
 		if c.Type() != data.FieldTypeNullableString {
 			return fmt.Errorf("field %s should have type %s, but got %s", c.Name, c.Type().ItemTypeString(), "B")
 		}
-		c.Field.Append(aws.String("[B]"))
+		c.Value.Append(aws.String("[B]"))
 	} else if value.BOOL != nil {
 		if c.Type() != data.FieldTypeNullableBool {
 			return fmt.Errorf("field %s should have type %s, but got %s", c.Name, c.Type().ItemTypeString(), "BOOL")
 		}
-		c.Field.Append(value.BOOL)
+		c.Value.Append(value.BOOL)
 	} else if value.NULL != nil {
-		c.Field.Append(nil)
+		c.Value.Append(nil)
 	} else if value.M != nil {
 		if c.Type() != data.FieldTypeNullableJSON {
 			return fmt.Errorf("field %s should have type %s, but got %s", c.Name, c.Type().ItemTypeString(), "M")
@@ -209,7 +209,7 @@ func (c *Column) AppendValue(value *dynamodb.AttributeValue) error {
 		if err != nil {
 			return err
 		}
-		c.Field.Append(v)
+		c.Value.Append(v)
 	} else if value.L != nil {
 		if c.Type() != data.FieldTypeNullableJSON {
 			return fmt.Errorf("field %s should have type %s, but got %s", c.Name, c.Type().ItemTypeString(), "L")
@@ -218,7 +218,7 @@ func (c *Column) AppendValue(value *dynamodb.AttributeValue) error {
 		if err != nil {
 			return err
 		}
-		c.Field.Append(v)
+		c.Value.Append(v)
 	} else if value.SS != nil {
 		if c.Type() != data.FieldTypeNullableJSON {
 			return fmt.Errorf("field %s should have type %s, but got %s", c.Name, c.Type().ItemTypeString(), "SS")
@@ -227,7 +227,7 @@ func (c *Column) AppendValue(value *dynamodb.AttributeValue) error {
 		if err != nil {
 			return err
 		}
-		c.Field.Append(v)
+		c.Value.Append(v)
 	} else if value.NS != nil {
 		if c.Type() != data.FieldTypeNullableJSON {
 			return fmt.Errorf("field %s should have type %s, but got %s", c.Name, c.Type().ItemTypeString(), "NS")
@@ -236,12 +236,12 @@ func (c *Column) AppendValue(value *dynamodb.AttributeValue) error {
 		if err != nil {
 			return err
 		}
-		c.Field.Append(v)
+		c.Value.Append(v)
 	} else if value.BS != nil {
 		if c.Type() != data.FieldTypeNullableString {
 			return fmt.Errorf("field %s should have type %s, but got %s", c.Name, c.Type().ItemTypeString(), "BS")
 		}
-		c.Field.Append(aws.String("[BS]"))
+		c.Value.Append(aws.String("[BS]"))
 	}
 
 	return nil

@@ -89,7 +89,7 @@ func PrintDataFrame(dataFrame *data.Frame) {
 }
 
 func OutputToDataFrame(dataFrameName string, output *dynamodb.ExecuteStatementOutput, datetimeFields map[string]string) (*data.Frame, error) {
-	columns := make(map[string]*Column)
+	attributes := make(map[string]*Attribute)
 	for rowIndex, row := range output.Items {
 		for name, value := range row {
 			datetimeFormat := ""
@@ -97,34 +97,34 @@ func OutputToDataFrame(dataFrameName string, output *dynamodb.ExecuteStatementOu
 				datetimeFormat = df
 			}
 
-			if c, ok := columns[name]; ok {
-				err := c.AppendValue(value)
+			if a, ok := attributes[name]; ok {
+				err := a.Append(value)
 				if err != nil {
 					return nil, err
 				}
 			} else {
-				newColumn, err := NewColumn(rowIndex, name, value, datetimeFormat)
+				newAttribute, err := NewAttribute(rowIndex, name, value, datetimeFormat)
 				if err != nil {
 					return nil, err
 				}
-				if newColumn != nil {
-					columns[name] = newColumn
+				if newAttribute != nil {
+					attributes[name] = newAttribute
 				}
 			}
 		}
 
-		// Make sure all columns have the same size
-		for _, c := range columns {
-			// Pad other columns with null value
+		// Make sure all attributes have the same size
+		for _, c := range attributes {
+			// Pad other attributes with null value
 			if c.Size() != rowIndex+1 {
-				c.Field.Append(nil)
+				c.Value.Append(nil)
 			}
 		}
 	}
 
 	frame := data.NewFrame(dataFrameName)
-	for _, c := range columns {
-		frame.Fields = append(frame.Fields, c.Field)
+	for _, c := range attributes {
+		frame.Fields = append(frame.Fields, c.Value)
 	}
 
 	return frame, nil
