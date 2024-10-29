@@ -10,12 +10,12 @@ type Props = QueryEditorProps<DataSource, DynamoDBQuery, DynamoDBDataSourceOptio
 
 const datetimeFormatOptions: Array<SelectableValue<string>> = [
   {
-    label: "Unix timestamp (seconds)",
+    label: "Unix timestamp(s)",
     value: DatetimeFormat.UnixTimestampSeconds,
     description: "The number of seconds that have elapsed since January 1, 1970 (also known as the Unix epoch), e.g., 1674512096"
   },
   {
-    label: "Unix timestamp (miliseconds)",
+    label: "Unix timestamp(ms)",
     value: DatetimeFormat.UnixTimestampMiniseconds,
     description: "The number of miliseconds that have elapsed since January 1, 1970 (also known as the Unix epoch), e.g., 1674512096000"
   },
@@ -53,16 +53,6 @@ const datetimeFormatOptions: Array<SelectableValue<string>> = [
     label: "RFC 850",
     value: DatetimeFormat.RFC850,
     description: DatetimeFormat.RFC850
-  },
-  {
-    label: "Date time",
-    value: DatetimeFormat.DateTime,
-    description: DatetimeFormat.DateTime
-  },
-  {
-    label: "Date only",
-    value: DatetimeFormat.DateOnly,
-    description: DatetimeFormat.DateOnly
   },
   {
     label: "Custom format",
@@ -152,10 +142,10 @@ export function QueryEditor({ query, onChange }: Props) {
           onBlur={onQueryTextChange}
           value={query.queryText || ""}
           width="100%"
-          height="300px"
+          height="100px"
           language="sql"
-          showLineNumbers={true}
           showMiniMap={false}
+          monacoOptions={{ fontSize: 14 }}
           onEditorDidMount={onCodeEditorDidMount}
         />
       </Field>

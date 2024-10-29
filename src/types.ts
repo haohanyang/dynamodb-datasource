@@ -28,8 +28,6 @@ export const DatetimeFormat = {
   RFC1123Z: "Mon, 02 Jan 2006 15:04:05 -0700",
   RFC3339: "2006-01-02T15:04:05Z07:00",
   RFC3339Nano: "2006-01-02T15:04:05.999999999Z07:00",
-  DateTime: "2006-01-02 15:04:05",
-  DateOnly: "2006-01-02",
   CustomFormat: "custom"
 };
 export interface DatetimeField {
