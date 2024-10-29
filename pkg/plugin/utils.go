@@ -1,20 +1,18 @@
 package plugin
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
-
-var endpoint = "http://localhost:4566"
 
 func loadExtraPluginSettings(source backend.DataSourceInstanceSettings) (*ExtraPluginSettings, error) {
 	settings := ExtraPluginSettings{}
@@ -24,6 +22,26 @@ func loadExtraPluginSettings(source backend.DataSourceInstanceSettings) (*ExtraP
 	}
 
 	return &settings, nil
+}
+
+func CreateTestDatasource(ctx context.Context) *Datasource {
+	dsSetting := awsds.AWSDatasourceSettings{
+		Profile:   "test",
+		Region:    "us-east-1",
+		AuthType:  awsds.AuthTypeKeys,
+		Endpoint:  "http://localhost:4566",
+		AccessKey: "test",
+		SecretKey: "test",
+	}
+
+	authSettings := awsds.ReadAuthSettings(ctx)
+	sessionCache := awsds.NewSessionCache()
+
+	return &Datasource{
+		Settings:     dsSetting,
+		authSettings: *authSettings,
+		sessionCache: sessionCache,
+	}
 }
 
 func parseNumber(n string) (*int64, *float64, error) {
@@ -88,61 +106,6 @@ func PrintDataFrame(dataFrame *data.Frame) {
 	}
 }
 
-func OutputToDataFrame(dataFrameName string, output *dynamodb.ExecuteStatementOutput, datetimeFields map[string]string) (*data.Frame, error) {
-	attributes := make(map[string]*Attribute)
-	for rowIndex, row := range output.Items {
-		for name, value := range row {
-			datetimeFormat := ""
-			if df, ok := datetimeFields[name]; ok {
-				datetimeFormat = df
-			}
-
-			if a, ok := attributes[name]; ok {
-				err := a.Append(value)
-				if err != nil {
-					return nil, err
-				}
-			} else {
-				newAttribute, err := NewAttribute(rowIndex, name, value, datetimeFormat)
-				if err != nil {
-					return nil, err
-				}
-				if newAttribute != nil {
-					attributes[name] = newAttribute
-				}
-			}
-		}
-
-		// Make sure all attributes have the same size
-		for _, c := range attributes {
-			// Pad other attributes with null value
-			if c.Size() != rowIndex+1 {
-				c.Value.Append(nil)
-			}
-		}
-	}
-
-	frame := data.NewFrame(dataFrameName)
-	for _, c := range attributes {
-		frame.Fields = append(frame.Fields, c.Value)
-	}
-
-	return frame, nil
-}
-
-func NewTestClient() (*dynamodb.DynamoDB, error) {
-	sess, err := session.NewSession(&aws.Config{
-		Endpoint:    aws.String(endpoint),
-		Credentials: credentials.AnonymousCredentials,
-		Region:      aws.String("us-east-1"),
-	})
-
-	if err != nil {
-		return nil, err
-	}
-	return dynamodb.New(sess), nil
-}
-
 func mapToJson(value *dynamodb.AttributeValue) (*json.RawMessage, error) {
 	var m map[string]interface{}
 
@@ -155,7 +118,7 @@ func mapToJson(value *dynamodb.AttributeValue) (*json.RawMessage, error) {
 	if err != nil {
 		return nil, err
 	}
-	return pointer(json.RawMessage(jsonString)), nil
+	return Pointer(json.RawMessage(jsonString)), nil
 }
 
 func listToJson(value *dynamodb.AttributeValue) (*json.RawMessage, error) {
@@ -170,7 +133,7 @@ func listToJson(value *dynamodb.AttributeValue) (*json.RawMessage, error) {
 	if err != nil {
 		return nil, err
 	}
-	return pointer(json.RawMessage(jsonString)), nil
+	return Pointer(json.RawMessage(jsonString)), nil
 }
 
 func stringSetToJson(value *dynamodb.AttributeValue) (*json.RawMessage, error) {
@@ -178,7 +141,7 @@ func stringSetToJson(value *dynamodb.AttributeValue) (*json.RawMessage, error) {
 	if err != nil {
 		return nil, err
 	}
-	return pointer(json.RawMessage(jsonString)), nil
+	return Pointer(json.RawMessage(jsonString)), nil
 }
 
 func numberSetToJson(value *dynamodb.AttributeValue) (*json.RawMessage, error) {
@@ -200,9 +163,9 @@ func numberSetToJson(value *dynamodb.AttributeValue) (*json.RawMessage, error) {
 	if err != nil {
 		return nil, err
 	}
-	return pointer(json.RawMessage(jsonString)), nil
+	return Pointer(json.RawMessage(jsonString)), nil
 }
 
-func pointer[K any](val K) *K {
+func Pointer[K any](val K) *K {
 	return &val
 }

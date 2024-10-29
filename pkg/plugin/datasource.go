@@ -59,7 +59,6 @@ func (d *Datasource) Dispose() {
 }
 
 func (d *Datasource) getDynamoDBClient(ctx context.Context, settings *backend.DataSourceInstanceSettings) (*dynamodb.DynamoDB, error) {
-
 	httpClientProvider := httpclient.NewProvider()
 	httpClientOptions, err := settings.HTTPClientOptions(ctx)
 	if err != nil {
@@ -134,7 +133,7 @@ func (d *Datasource) query(ctx context.Context, dynamoDBClient *dynamodb.DynamoD
 		dateFields[k.Name] = k.Format
 	}
 
-	frame, err := OutputToDataFrame(query.RefID, output, dateFields)
+	frame, err := QueryResultToDataFrame(query.RefID, output, dateFields)
 	if err != nil {
 		response.Error = err
 		return response

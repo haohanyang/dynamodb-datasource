@@ -1,131 +1,26 @@
-package plugin
+package test
 
 import (
 	"context"
 	"fmt"
-	"maps"
-	"reflect"
-	"strconv"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/google/go-cmp/cmp"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
+	"github.com/haohanyang/dynamodb-datasource/pkg/plugin"
 )
 
-var testTableName = "test"
-
-func newTestClient() (*dynamodb.DynamoDB, error) {
-	sess, err := session.NewSession(&aws.Config{
-		Endpoint:    aws.String(endpoint),
-		Credentials: credentials.AnonymousCredentials,
-		Region:      aws.String("us-east-1"),
-	})
-
-	if err != nil {
-		return nil, err
-	}
-	return dynamodb.New(sess), nil
-}
-
-func writeItems(ctx context.Context, client *dynamodb.DynamoDB, tableName string, items []DataRow) error {
-	for index, item := range items {
-		c := maps.Clone(item)
-		c["id"] = &dynamodb.AttributeValue{
-			N: aws.String("1"),
-		}
-		c["sid"] = &dynamodb.AttributeValue{
-			N: aws.String(strconv.Itoa(index + 1)),
-		}
-
-		_, err := client.PutItemWithContext(ctx, &dynamodb.PutItemInput{
-			TableName: aws.String(tableName),
-			Item:      c,
-		})
-
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func outputFromItems(ctx context.Context, client *dynamodb.DynamoDB, tableName string, items []DataRow, selectedAttributes string) (*dynamodb.ExecuteStatementOutput, error) {
-	err := writeItems(ctx, client, tableName, items)
-	if err != nil {
-		return nil, err
-	}
-
-	return client.ExecuteStatementWithContext(ctx, &dynamodb.ExecuteStatementInput{
-		Statement: aws.String(fmt.Sprintf("SELECT %s from %s where id = 1", selectedAttributes, tableName)),
-	})
-}
-
-func getFieldValue[T any](t *testing.T, field *data.Field, idx int) T {
-	v, ok := field.ConcreteAt(idx)
-	if !ok {
-		t.Fatal("null pointer")
-	}
-	return v.(T)
-}
-
-func assertEqual(t *testing.T, a interface{}, b interface{}) {
-	if cmp.Equal(a, b) {
-		return
-	}
-
-	t.Errorf("Received %v (type %v), expected %v (type %v)", reflect.ValueOf(a), reflect.TypeOf(a), reflect.ValueOf(b), reflect.TypeOf(b))
-}
-
-func TestOutputToDataFrame(t *testing.T) {
+func TestQueryResultToDataFrame(t *testing.T) {
 	ctx := context.Background()
-	client, err := newTestClient()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	_, err = client.DeleteTableWithContext(ctx, &dynamodb.DeleteTableInput{
-		TableName: &testTableName,
-	})
-
-	if err != nil && !strings.Contains(err.Error(), "ResourceNotFoundException") {
-		t.Fatal(err)
-	}
-
-	_, err = client.CreateTableWithContext(ctx, &dynamodb.CreateTableInput{
-		TableName: aws.String(testTableName),
-		AttributeDefinitions: []*dynamodb.AttributeDefinition{
-			{
-				AttributeName: aws.String("id"),
-				AttributeType: aws.String("N"),
-			},
-			{
-				AttributeName: aws.String("sid"),
-				AttributeType: aws.String("N"),
-			},
-		},
-		KeySchema: []*dynamodb.KeySchemaElement{{
-			AttributeName: aws.String("id"),
-			KeyType:       aws.String("HASH"),
-		}, {
-			AttributeName: aws.String("sid"),
-			KeyType:       aws.String("RANGE"),
-		}},
-		BillingMode: aws.String("PAY_PER_REQUEST"),
-	})
+	err := createTable(ctx, "test")
 
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	t.Run("N int", func(t *testing.T) {
-		rows := []DataRow{
+		rows := []plugin.DataRow{
 			{"myNI": &dynamodb.AttributeValue{
 				N: aws.String("1"),
 			}},
@@ -137,12 +32,12 @@ func TestOutputToDataFrame(t *testing.T) {
 			}},
 		}
 
-		output, err := outputFromItems(ctx, client, testTableName, rows, "myNI")
+		output, err := outputFromItems(ctx, testTableName, rows, "myNI")
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		frame, err := OutputToDataFrame("test", output, make(map[string]string))
+		frame, err := plugin.QueryResultToDataFrame("test", output, make(map[string]string))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -150,13 +45,13 @@ func TestOutputToDataFrame(t *testing.T) {
 		field := frame.Fields[0]
 		var null *int64
 		assertEqual(t, field.Name, "myNI")
-		assertEqual(t, field.At(0), pointer[int64](1))
+		assertEqual(t, field.At(0), plugin.Pointer[int64](1))
 		assertEqual(t, field.At(1), null)
-		assertEqual(t, field.At(2), pointer[int64](2))
+		assertEqual(t, field.At(2), plugin.Pointer[int64](2))
 	})
 
 	t.Run("N float", func(t *testing.T) {
-		rows := []DataRow{
+		rows := []plugin.DataRow{
 			{"myNF": &dynamodb.AttributeValue{
 				N: aws.String("1.2"),
 			}},
@@ -168,12 +63,12 @@ func TestOutputToDataFrame(t *testing.T) {
 			}},
 		}
 
-		output, err := outputFromItems(ctx, client, testTableName, rows, "myNF")
+		output, err := outputFromItems(ctx, testTableName, rows, "myNF")
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		frame, err := OutputToDataFrame("test", output, make(map[string]string))
+		frame, err := plugin.QueryResultToDataFrame("test", output, make(map[string]string))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -186,7 +81,7 @@ func TestOutputToDataFrame(t *testing.T) {
 	})
 
 	t.Run("N int & float", func(t *testing.T) {
-		rows := []DataRow{
+		rows := []plugin.DataRow{
 			{"myNIF": &dynamodb.AttributeValue{
 				N: aws.String("1"),
 			}},
@@ -198,12 +93,12 @@ func TestOutputToDataFrame(t *testing.T) {
 			}},
 		}
 
-		output, err := outputFromItems(ctx, client, testTableName, rows, "myNIF")
+		output, err := outputFromItems(ctx, testTableName, rows, "myNIF")
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		frame, err := OutputToDataFrame("test", output, make(map[string]string))
+		frame, err := plugin.QueryResultToDataFrame("test", output, make(map[string]string))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -216,7 +111,7 @@ func TestOutputToDataFrame(t *testing.T) {
 	})
 
 	t.Run("N float & int", func(t *testing.T) {
-		rows := []DataRow{
+		rows := []plugin.DataRow{
 			{"myNFI": &dynamodb.AttributeValue{
 				N: aws.String("1.1"),
 			}},
@@ -228,12 +123,12 @@ func TestOutputToDataFrame(t *testing.T) {
 			}},
 		}
 
-		output, err := outputFromItems(ctx, client, testTableName, rows, "myNFI")
+		output, err := outputFromItems(ctx, testTableName, rows, "myNFI")
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		frame, err := OutputToDataFrame("test", output, make(map[string]string))
+		frame, err := plugin.QueryResultToDataFrame("test", output, make(map[string]string))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -246,7 +141,7 @@ func TestOutputToDataFrame(t *testing.T) {
 	})
 
 	t.Run("BOOL", func(t *testing.T) {
-		rows := []DataRow{
+		rows := []plugin.DataRow{
 			{"myBOOL": &dynamodb.AttributeValue{
 				BOOL: aws.Bool(true),
 			}},
@@ -255,23 +150,23 @@ func TestOutputToDataFrame(t *testing.T) {
 			}},
 		}
 
-		output, err := outputFromItems(ctx, client, testTableName, rows, "myBOOL")
+		output, err := outputFromItems(ctx, testTableName, rows, "myBOOL")
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		frame, err := OutputToDataFrame("test", output, make(map[string]string))
+		frame, err := plugin.QueryResultToDataFrame("test", output, make(map[string]string))
 		if err != nil {
 			t.Fatal(err)
 		}
 		field := frame.Fields[0]
 		assertEqual(t, field.Name, "myBOOL")
-		assertEqual(t, field.At(0), pointer(true))
-		assertEqual(t, field.At(1), pointer(false))
+		assertEqual(t, field.At(0), plugin.Pointer(true))
+		assertEqual(t, field.At(1), plugin.Pointer(false))
 	})
 
 	t.Run("M", func(t *testing.T) {
-		rows := []DataRow{
+		rows := []plugin.DataRow{
 			{"myM": &dynamodb.AttributeValue{
 				M: map[string]*dynamodb.AttributeValue{
 					"key1": {
@@ -294,12 +189,12 @@ func TestOutputToDataFrame(t *testing.T) {
 			}},
 		}
 
-		output, err := outputFromItems(ctx, client, testTableName, rows, "myM")
+		output, err := outputFromItems(ctx, testTableName, rows, "myM")
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		frame, err := OutputToDataFrame("test", output, make(map[string]string))
+		frame, err := plugin.QueryResultToDataFrame("test", output, make(map[string]string))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -309,7 +204,7 @@ func TestOutputToDataFrame(t *testing.T) {
 	})
 
 	t.Run("L", func(t *testing.T) {
-		rows := []DataRow{
+		rows := []plugin.DataRow{
 			{"myL": &dynamodb.AttributeValue{
 				L: []*dynamodb.AttributeValue{
 					{
@@ -332,12 +227,12 @@ func TestOutputToDataFrame(t *testing.T) {
 			}},
 		}
 
-		output, err := outputFromItems(ctx, client, testTableName, rows, "myL")
+		output, err := outputFromItems(ctx, testTableName, rows, "myL")
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		frame, err := OutputToDataFrame("test", output, make(map[string]string))
+		frame, err := plugin.QueryResultToDataFrame("test", output, make(map[string]string))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -347,7 +242,7 @@ func TestOutputToDataFrame(t *testing.T) {
 	})
 
 	t.Run("SS", func(t *testing.T) {
-		rows := []DataRow{
+		rows := []plugin.DataRow{
 			{"mySS": &dynamodb.AttributeValue{
 				SS: []*string{aws.String("s1"), aws.String("s2")},
 			}},
@@ -356,12 +251,12 @@ func TestOutputToDataFrame(t *testing.T) {
 			}},
 		}
 
-		output, err := outputFromItems(ctx, client, testTableName, rows, "mySS")
+		output, err := outputFromItems(ctx, testTableName, rows, "mySS")
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		frame, err := OutputToDataFrame("test", output, make(map[string]string))
+		frame, err := plugin.QueryResultToDataFrame("test", output, make(map[string]string))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -371,7 +266,7 @@ func TestOutputToDataFrame(t *testing.T) {
 	})
 
 	t.Run("NS", func(t *testing.T) {
-		rows := []DataRow{
+		rows := []plugin.DataRow{
 			{"myNS": &dynamodb.AttributeValue{
 				NS: []*string{aws.String("1.1"), aws.String("2")},
 			}},
@@ -380,12 +275,12 @@ func TestOutputToDataFrame(t *testing.T) {
 			}},
 		}
 
-		output, err := outputFromItems(ctx, client, testTableName, rows, "myNS")
+		output, err := outputFromItems(ctx, testTableName, rows, "myNS")
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		frame, err := OutputToDataFrame("test", output, make(map[string]string))
+		frame, err := plugin.QueryResultToDataFrame("test", output, make(map[string]string))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -395,7 +290,7 @@ func TestOutputToDataFrame(t *testing.T) {
 	})
 
 	t.Run("Datetime Unix seconds", func(t *testing.T) {
-		rows := []DataRow{
+		rows := []plugin.DataRow{
 			{"myDate": &dynamodb.AttributeValue{
 				N: aws.String("1730070176"),
 			}},
@@ -404,13 +299,13 @@ func TestOutputToDataFrame(t *testing.T) {
 				N: aws.String("1730070193"),
 			}}}
 
-		output, err := outputFromItems(ctx, client, testTableName, rows, "myDate")
+		output, err := outputFromItems(ctx, testTableName, rows, "myDate")
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		frame, err := OutputToDataFrame("test", output, map[string]string{
-			"myDate": UnixTimestampSeconds})
+		frame, err := plugin.QueryResultToDataFrame("test", output, map[string]string{
+			"myDate": plugin.UnixTimestampSeconds})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -425,7 +320,7 @@ func TestOutputToDataFrame(t *testing.T) {
 	})
 
 	t.Run("Datetime Unix miliseconds", func(t *testing.T) {
-		rows := []DataRow{
+		rows := []plugin.DataRow{
 			{"myDate": &dynamodb.AttributeValue{
 				N: aws.String("1730070554000"),
 			}},
@@ -434,13 +329,13 @@ func TestOutputToDataFrame(t *testing.T) {
 				N: aws.String("1730070568000"),
 			}}}
 
-		output, err := outputFromItems(ctx, client, testTableName, rows, "myDate")
+		output, err := outputFromItems(ctx, testTableName, rows, "myDate")
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		frame, err := OutputToDataFrame("test", output, map[string]string{
-			"myDate": UnixTimestampMiniseconds})
+		frame, err := plugin.QueryResultToDataFrame("test", output, map[string]string{
+			"myDate": plugin.UnixTimestampMiniseconds})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -456,7 +351,7 @@ func TestOutputToDataFrame(t *testing.T) {
 
 	t.Run("Datetime Custom format ISO8601", func(t *testing.T) {
 
-		rows := []DataRow{
+		rows := []plugin.DataRow{
 			{"myDate": &dynamodb.AttributeValue{
 				S: aws.String("2024-10-27T23:10:42.951Z"),
 			}},
@@ -465,12 +360,12 @@ func TestOutputToDataFrame(t *testing.T) {
 				S: aws.String("2024-10-27T23:10:49.552Z"),
 			}}}
 
-		output, err := outputFromItems(ctx, client, testTableName, rows, "myDate")
+		output, err := outputFromItems(ctx, testTableName, rows, "myDate")
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		frame, err := OutputToDataFrame("test", output, map[string]string{
+		frame, err := plugin.QueryResultToDataFrame("test", output, map[string]string{
 			"myDate": "2006-01-02T15:04:05.999Z"})
 		if err != nil {
 			t.Fatal(err)
