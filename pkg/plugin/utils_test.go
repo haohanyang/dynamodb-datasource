@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/google/go-cmp/cmp"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
 
@@ -75,7 +76,7 @@ func getFieldValue[T any](t *testing.T, field *data.Field, idx int) T {
 }
 
 func assertEqual(t *testing.T, a interface{}, b interface{}) {
-	if a == b {
+	if cmp.Equal(a, b) {
 		return
 	}
 
@@ -149,9 +150,9 @@ func TestOutputToDataFrame(t *testing.T) {
 		field := frame.Fields[0]
 		var null *int64
 		assertEqual(t, field.Name, "myNI")
-		assertEqual(t, getFieldValue[int64](t, field, 0), *aws.Int64(1))
+		assertEqual(t, field.At(0), pointer[int64](1))
 		assertEqual(t, field.At(1), null)
-		assertEqual(t, getFieldValue[int64](t, field, 2), *aws.Int64(2))
+		assertEqual(t, field.At(2), pointer[int64](2))
 	})
 
 	t.Run("N float", func(t *testing.T) {
@@ -265,8 +266,8 @@ func TestOutputToDataFrame(t *testing.T) {
 		}
 		field := frame.Fields[0]
 		assertEqual(t, field.Name, "myBOOL")
-		assertEqual(t, getFieldValue[bool](t, field, 0), true)
-		assertEqual(t, getFieldValue[bool](t, field, 1), false)
+		assertEqual(t, field.At(0), pointer(true))
+		assertEqual(t, field.At(1), pointer(false))
 	})
 
 	t.Run("M", func(t *testing.T) {
