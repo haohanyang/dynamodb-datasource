@@ -20,48 +20,12 @@ const datetimeFormatOptions: Array<SelectableValue<string>> = [
     description: "The number of miliseconds that have elapsed since January 1, 1970 (also known as the Unix epoch), e.g., 1674512096000"
   },
   {
-    label: "RFC 3339",
-    value: DatetimeFormat.RFC3339,
-    description: DatetimeFormat.RFC3339
-  },
-  {
-    label: "RFC 3339 nano",
-    value: DatetimeFormat.RFC3339Nano,
-    description: DatetimeFormat.RFC3339Nano
-  },
-  {
-    label: "RFC 1123",
-    value: DatetimeFormat.RFC1123,
-    description: DatetimeFormat.RFC1123
-  },
-  {
-    label: "RFC 1123Z",
-    value: DatetimeFormat.RFC1123Z,
-    description: DatetimeFormat.RFC1123Z
-  },
-  {
-    label: "RFC 822",
-    value: DatetimeFormat.RFC822,
-    description: DatetimeFormat.RFC822
-  },
-  {
-    label: "RFC 822Z",
-    value: DatetimeFormat.RFC822Z,
-    description: DatetimeFormat.RFC822Z
-  },
-  {
-    label: "RFC 850",
-    value: DatetimeFormat.RFC850,
-    description: DatetimeFormat.RFC850
-  },
-  {
     label: "Custom format",
     value: DatetimeFormat.CustomFormat,
-    description: "User-defined format"
+    description: "User-defined format (moment.js/day.js)"
   }
 ];
 
-// const formatHelper = "User-defined format based on the specific timestamp (January 2, 15:04:05, 2006, in time zone seven hours west of GMT), e.g. \"2006-01-02T15:04:05Z07:00\"(RFC3339), \"Mon, 02 Jan 2006 15:04:05 MST\"(RFC1123), \"02 Jan 06 15:04 MST\"(RFC822)"
 
 export function QueryEditor({ query, onChange }: Props) {
   const codeEditorRef = useRef<monacoType.editor.IStandaloneCodeEditor | null>(null);

@@ -67,8 +67,11 @@ def create_general_table(table_name: str = "Test"):
             "Map": {"subkey1": "value1", "subkey2": 99},
             "StringSet": set(["value1", "value2", "value3"]),
             "NumberSet": set([Decimal("1.1"), 2, Decimal("3.3")]),
-            "ISODate": datetime.now().isoformat(),
-            "UnixDate": Decimal(str(time.mktime(datetime.now().timetuple()))),
+            "Datetime1": "2011-10-05T14:48:00.000Z",
+            "Datetime2": "Wed, 30 Oct 2024 18:24:39 GMT",
+            "Datetime3": "2024-10-30T19:24:54+01:00",
+            "Datetime4": 1730312734,
+            "Datetime5": 1730312750449,
         }
     )
 
