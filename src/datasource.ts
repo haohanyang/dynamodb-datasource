@@ -32,7 +32,7 @@ export class DataSource extends DataSourceWithBackend<DynamoDBQuery, DynamoDBDat
         queryText:
           query.queryText?.replaceAll(/\$from/g, Math.floor(request.range.from.toDate().getTime() / 1000).toString())
             .replaceAll(/\$to/g, Math.floor(request.range.to.toDate().getTime() / 1000).toString()),
-        datetimeFields: query.datetimeAttributes.map(field => {
+        datetimeAttributes: query.datetimeAttributes.map(field => {
           if (field.format !== DatetimeFormat.UnixTimestampSeconds && field.format !== DatetimeFormat.UnixTimestampMiniseconds) {
             return { ...field, format: formatRefTime(field.format) };
           }

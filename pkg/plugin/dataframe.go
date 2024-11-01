@@ -5,12 +5,12 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
 
-func QueryResultToDataFrame(dataFrameName string, output *dynamodb.ExecuteStatementOutput, datetimeFields map[string]string) (*data.Frame, error) {
+func QueryResultToDataFrame(dataFrameName string, output *dynamodb.ExecuteStatementOutput, datetimeAttributes map[string]string) (*data.Frame, error) {
 	attributes := make(map[string]*Attribute)
 	for rowIndex, row := range output.Items {
 		for name, value := range row {
 			datetimeFormat := ""
-			if df, ok := datetimeFields[name]; ok {
+			if df, ok := datetimeAttributes[name]; ok {
 				datetimeFormat = df
 			}
 

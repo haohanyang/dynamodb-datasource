@@ -114,6 +114,8 @@ func (d *Datasource) query(ctx context.Context, dynamoDBClient *dynamodb.DynamoD
 		return backend.ErrDataResponse(backend.StatusBadRequest, fmt.Sprintf("json unmarshal: %v", err.Error()))
 	}
 
+	backend.Logger.Debug("Query model", qm)
+
 	input := &dynamodb.ExecuteStatementInput{
 		Statement: aws.String(qm.QueryText),
 	}
@@ -128,12 +130,12 @@ func (d *Datasource) query(ctx context.Context, dynamoDBClient *dynamodb.DynamoD
 		return backend.ErrDataResponse(backend.StatusBadRequest, fmt.Sprintf("executes statement: %v", err.Error()))
 	}
 
-	dateFields := make(map[string]string)
+	datetimeAttributes := make(map[string]string)
 	for _, k := range qm.DatetimeAttributes {
-		dateFields[k.Name] = k.Format
+		datetimeAttributes[k.Name] = k.Format
 	}
 
-	frame, err := QueryResultToDataFrame(query.RefID, output, dateFields)
+	frame, err := QueryResultToDataFrame(query.RefID, output, datetimeAttributes)
 	if err != nil {
 		response.Error = err
 		return response
