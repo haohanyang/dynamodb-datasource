@@ -3,12 +3,12 @@ package plugin
 import "github.com/aws/aws-sdk-go/service/dynamodb"
 
 type QueryModel struct {
-	QueryText      string
-	Limit          int64
-	DatetimeFields []DatetimeField
+	QueryText          string
+	Limit              int64
+	DatetimeAttributes []DatetimeAttribute
 }
 
-type DatetimeField struct {
+type DatetimeAttribute struct {
 	Name   string
 	Format string
 }

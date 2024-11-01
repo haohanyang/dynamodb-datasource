@@ -4,12 +4,12 @@ import { DataQuery } from "@grafana/schema";
 export interface DynamoDBQuery extends DataQuery {
   queryText?: string;
   limit?: number;
-  datetimeFields: DatetimeField[];
+  datetimeAttributes: DatetimeAttribute[];
 }
 
 export const DEFAULT_QUERY: Partial<DynamoDBQuery> = {
   queryText: "",
-  datetimeFields: []
+  datetimeAttributes: []
 };
 
 export interface DynamoDBDataSourceOptions extends AwsAuthDataSourceJsonData {
@@ -23,7 +23,7 @@ export const DatetimeFormat = {
   UnixTimestampMiniseconds: "2",
   CustomFormat: "custom"
 };
-export interface DatetimeField {
+export interface DatetimeAttribute {
   name: string;
   format: string;
 }

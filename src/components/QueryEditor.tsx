@@ -1,10 +1,11 @@
 import React, { useRef, useState } from "react";
-import { Button, CodeEditor, Field, InlineField, InlineFieldRow, Input, Select, TagList } from "@grafana/ui";
+import { Button, CodeEditor, Field, InlineField, InlineFieldRow, Input, Select, TagsInput } from "@grafana/ui";
 import { QueryEditorProps, SelectableValue } from "@grafana/data";
 import { DataSource } from "../datasource";
 import { DynamoDBDataSourceOptions, DynamoDBQuery, DatetimeFormat } from "../types";
 import * as monacoType from "monaco-editor/esm/vs/editor/editor.api";
 import "./QueryEditor.css";
+import { Divider } from "@grafana/aws-sdk";
 
 type Props = QueryEditorProps<DataSource, DynamoDBQuery, DynamoDBDataSourceOptions>;
 
@@ -29,9 +30,8 @@ const datetimeFormatOptions: Array<SelectableValue<string>> = [
 
 export function QueryEditor({ query, onChange }: Props) {
   const codeEditorRef = useRef<monacoType.editor.IStandaloneCodeEditor | null>(null);
-  const [datetimeFieldInput, setDatetimeFieldInput] = useState<string>("");
+  const [datetimeAttributeInput, setDatetimeAttributeInput] = useState<string>("");
   const [datetimeFormatOption, setDatetimeFormatOption] = useState<string>(DatetimeFormat.UnixTimestampMiniseconds);
-  const [customDatetimeFormatInput, setCustomDatetimeFormatInput] = useState<string>("");
 
   const onQueryTextChange = (text: string) => {
     onChange({ ...query, queryText: text });
@@ -55,27 +55,38 @@ export function QueryEditor({ query, onChange }: Props) {
     }
   };
 
-  const onAddDatetimeField = (name: string, option: string, customFormat: string) => {
-    let format = customFormat;
-    if (option !== DatetimeFormat.CustomFormat) {
-      format = option;
-    }
-
-    if (name && format) {
+  const onAddDatetimeField = () => {
+    if (datetimeAttributeInput && (datetimeFormatOption === DatetimeFormat.UnixTimestampMiniseconds || datetimeFormatOption === DatetimeFormat.UnixTimestampSeconds)
+      && !query.datetimeAttributes.map(e => e.name).includes(datetimeAttributeInput)) {
       onChange({
         ...query,
-        datetimeFields: [...query.datetimeFields, { name: name, format: format }]
+        datetimeAttributes: [...query.datetimeAttributes, { name: datetimeAttributeInput, format: datetimeFormatOption }]
       });
-      setDatetimeFieldInput("");
-      setCustomDatetimeFormatInput("");
+      setDatetimeAttributeInput("");
     }
   };
 
-  const onRemoveDatetimeField = (name: string) => {
-    onChange({
-      ...query,
-      datetimeFields: query.datetimeFields.filter(e => e.name !== name)
-    });
+
+  const onDatetimeFormatsChange = (formats: string[]) => {
+    if (formats.length < query.datetimeAttributes.length) {
+      // Remove an attribute
+      onChange({
+        ...query,
+        datetimeAttributes: query.datetimeAttributes.filter(e => formats.includes(e.name))
+      });
+    } else if (formats.length > query.datetimeAttributes.length && datetimeAttributeInput) {
+      // Add an attribute
+      const format = formats[formats.length - 1]; //formats.find(e => !query.datetimeAttributes.map(f => f.name).includes(e));
+      if (!query.datetimeAttributes.map(e => e.name).includes(datetimeAttributeInput)) {
+        onChange({
+          ...query,
+          datetimeAttributes: [...query.datetimeAttributes, { name: datetimeAttributeInput, format: format }]
+        });
+        setDatetimeAttributeInput("");
+      }
+    }
+
+
   };
 
   const onCodeEditorDidMount = (e: monacoType.editor.IStandaloneCodeEditor) => {
@@ -84,23 +95,25 @@ export function QueryEditor({ query, onChange }: Props) {
 
   return (
     <>
-      <InlineField label="Limit" tooltip="(Optional) The maximum number of items to evaluate">
-        <Input type="number" min={0} value={query.limit} onChange={onLimitChange} aria-label="Limit" />
-      </InlineField>
-      <InlineFieldRow label="Add datetime field">
-        <InlineField label="Field" tooltip="Field which has datetime data type">
-          <Input value={datetimeFieldInput} onChange={e => setDatetimeFieldInput(e.currentTarget.value)} />
+      <InlineFieldRow>
+        <InlineField label="Limit" tooltip="(Optional) The maximum number of items to evaluate" labelWidth={11}>
+          <Input type="number" min={0} value={query.limit} onChange={onLimitChange} aria-label="Limit" width={15} />
         </InlineField>
-        <InlineField label="Format">
-          <Select options={datetimeFormatOptions} value={datetimeFormatOption} width={30}
-            onChange={sv => sv.value && setDatetimeFormatOption(sv.value)}></Select>
-        </InlineField>
-        {datetimeFormatOption === DatetimeFormat.CustomFormat && <InlineField label="Custom Format">
-          <Input label="Custom format" value={customDatetimeFormatInput} onChange={e => setCustomDatetimeFormatInput(e.currentTarget.value)} />
-        </InlineField>}
-        <Button onClick={() => onAddDatetimeField(datetimeFieldInput, datetimeFormatOption, customDatetimeFormatInput)}>Add</Button>
       </InlineFieldRow>
-      <TagList className="datetime-fields" tags={query.datetimeFields.map(f => f.name)} onClick={(n, _) => onRemoveDatetimeField(n)} />
+      <InlineFieldRow>
+        <InlineField label="Attribute" tooltip="Attribute which has datetime data type" labelWidth={11}>
+          <Input value={datetimeAttributeInput} onChange={e => setDatetimeAttributeInput(e.currentTarget.value)}
+            data-testid="datetime-attribute-input" width={15} />
+        </InlineField>
+        <InlineField label="Format" labelWidth={11}>
+          <Select options={datetimeFormatOptions} value={datetimeFormatOption} width={25}
+            onChange={sv => sv.value && setDatetimeFormatOption(sv.value)} data-testid="datetime-format-select" />
+        </InlineField>
+        {datetimeFormatOption !== DatetimeFormat.CustomFormat && <Button onClick={onAddDatetimeField} data-testid="datetime-format-add">Add2</Button>}
+      </InlineFieldRow>
+      <TagsInput tags={query.datetimeAttributes.map(f => f.name)} onChange={onDatetimeFormatsChange}
+        disabled={datetimeFormatOption !== DatetimeFormat.CustomFormat} width={38} placeholder="Enter day.js datatime format" />
+      <Divider />
       <Field label="Query Text" description="The PartiQL statement representing the operation to run">
         <CodeEditor
           onBlur={onQueryTextChange}

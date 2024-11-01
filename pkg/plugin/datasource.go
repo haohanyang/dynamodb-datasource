@@ -129,7 +129,7 @@ func (d *Datasource) query(ctx context.Context, dynamoDBClient *dynamodb.DynamoD
 	}
 
 	dateFields := make(map[string]string)
-	for _, k := range qm.DatetimeFields {
+	for _, k := range qm.DatetimeAttributes {
 		dateFields[k.Name] = k.Format
 	}
 

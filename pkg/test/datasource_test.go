@@ -38,7 +38,7 @@ func TestQueryData(t *testing.T) {
 		qm := plugin.QueryModel{
 			QueryText: "SELECT * FROM test",
 			Limit:     2,
-			DatetimeFields: []plugin.DatetimeField{
+			DatetimeAttributes: []plugin.DatetimeAttribute{
 				{
 					Name:   "ts",
 					Format: plugin.UnixTimestampSeconds,
@@ -106,7 +106,7 @@ func TestQueryData(t *testing.T) {
 		qm := plugin.QueryModel{
 			QueryText: "SELECT * FROM test",
 			Limit:     2,
-			DatetimeFields: []plugin.DatetimeField{
+			DatetimeAttributes: []plugin.DatetimeAttribute{
 				{
 					Name:   "ts",
 					Format: "2006-01-02T15:04:05-07:00",
