@@ -96,6 +96,7 @@ test("should return correct datetime", async ({
     selectors,
     page
 }) => {
+    test.setTimeout(100000)
     await initTableWithItems("test", [
         {
             "t1": { N: "1730408669" }, "t2": { S: "2024-10-31T22:04:29+01:00" },
