@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { Button, CodeEditor, Field, InlineField, InlineFieldRow, Input, Select, TagsInput } from "@grafana/ui";
+import { Button, CodeEditor, Field, IconButton, InlineField, InlineFieldRow, Input, Select } from "@grafana/ui";
 import { QueryEditorProps, SelectableValue } from "@grafana/data";
 import { DataSource } from "../datasource";
 import { DynamoDBDataSourceOptions, DynamoDBQuery, DatetimeFormat } from "../types";
@@ -31,7 +31,8 @@ const datetimeFormatOptions: Array<SelectableValue<string>> = [
 export function QueryEditor({ query, onChange }: Props) {
   const codeEditorRef = useRef<monacoType.editor.IStandaloneCodeEditor | null>(null);
   const [datetimeAttributeInput, setDatetimeAttributeInput] = useState<string>("");
-  const [datetimeFormatOption, setDatetimeFormatOption] = useState<string>(DatetimeFormat.UnixTimestampMiniseconds);
+  const [datetimeFormatOption, setDatetimeFormatOption] = useState<string>(DatetimeFormat.UnixTimestampSeconds);
+  const [customDatetimeFormatInput, setCustomDatetimeFormatInput] = useState<string>("");
 
   const onQueryTextChange = (text: string) => {
     onChange({ ...query, queryText: text });
@@ -56,37 +57,39 @@ export function QueryEditor({ query, onChange }: Props) {
   };
 
   const onAddDatetimeField = () => {
-    if (datetimeAttributeInput && (datetimeFormatOption === DatetimeFormat.UnixTimestampMiniseconds || datetimeFormatOption === DatetimeFormat.UnixTimestampSeconds)
-      && !query.datetimeAttributes.map(e => e.name).includes(datetimeAttributeInput)) {
+    let format = "";
+    if (datetimeFormatOption == DatetimeFormat.UnixTimestampMiniseconds || datetimeFormatOption == DatetimeFormat.UnixTimestampSeconds) {
+      format = datetimeFormatOption;
+    } else {
+      format = customDatetimeFormatInput;
+    }
+
+    if (datetimeAttributeInput && format && !query.datetimeAttributes.map(e => e.name).includes(datetimeAttributeInput)) {
       onChange({
         ...query,
-        datetimeAttributes: [...query.datetimeAttributes, { name: datetimeAttributeInput, format: datetimeFormatOption }]
+        datetimeAttributes: [...query.datetimeAttributes, { name: datetimeAttributeInput, format: format }]
       });
       setDatetimeAttributeInput("");
+      setCustomDatetimeFormatInput("");
+    }
+  };
+
+  const showTimeFormat = (format: string) => {
+    if (format === DatetimeFormat.UnixTimestampSeconds) {
+      return "Unix timestamp(s)";
+    } else if (format === DatetimeFormat.UnixTimestampMiniseconds) {
+      return "Unix timestamp(ms)";
+    } else {
+      return format;
     }
   };
 
 
-  const onDatetimeFormatsChange = (formats: string[]) => {
-    if (formats.length < query.datetimeAttributes.length) {
-      // Remove an attribute
-      onChange({
-        ...query,
-        datetimeAttributes: query.datetimeAttributes.filter(e => formats.includes(e.name))
-      });
-    } else if (formats.length > query.datetimeAttributes.length && datetimeAttributeInput) {
-      // Add an attribute
-      const format = formats[formats.length - 1]; //formats.find(e => !query.datetimeAttributes.map(f => f.name).includes(e));
-      if (!query.datetimeAttributes.map(e => e.name).includes(datetimeAttributeInput)) {
-        onChange({
-          ...query,
-          datetimeAttributes: [...query.datetimeAttributes, { name: datetimeAttributeInput, format: format }]
-        });
-        setDatetimeAttributeInput("");
-      }
-    }
-
-
+  const onRemoveDatetimeAttribute = (name: string) => {
+    onChange({
+      ...query,
+      datetimeAttributes: query.datetimeAttributes.filter(e => e.name !== name)
+    });
   };
 
   const onCodeEditorDidMount = (e: monacoType.editor.IStandaloneCodeEditor) => {
@@ -109,10 +112,18 @@ export function QueryEditor({ query, onChange }: Props) {
           <Select options={datetimeFormatOptions} value={datetimeFormatOption} width={25}
             onChange={sv => sv.value && setDatetimeFormatOption(sv.value)} data-testid="datetime-format-select" />
         </InlineField>
-        {datetimeFormatOption !== DatetimeFormat.CustomFormat && <Button onClick={onAddDatetimeField} data-testid="datetime-format-add">Add2</Button>}
+        {datetimeFormatOption === DatetimeFormat.CustomFormat && <InlineField label="Custom Format">
+          <Input label="Custom format" placeholder="Enter day.js datatime format" value={customDatetimeFormatInput} onChange={e => setCustomDatetimeFormatInput(e.currentTarget.value)} />
+        </InlineField>}
+        <Button onClick={onAddDatetimeField} data-testid="datetime-format-add">Add</Button>
       </InlineFieldRow>
-      <TagsInput tags={query.datetimeAttributes.map(f => f.name)} onChange={onDatetimeFormatsChange}
-        disabled={datetimeFormatOption !== DatetimeFormat.CustomFormat} width={38} placeholder="Enter day.js datatime format" />
+      <ul className="datatime-attribute-list">
+        {query.datetimeAttributes.map((a, i) =>
+          <li className="datatime-attribute-item" key={i}>
+            <span className="datatime-attribute-name">{a.name}</span>
+            <IconButton name="times" size="lg" tooltip={"Remove \"" + a.name + ": " + showTimeFormat(a.format) + "\""} className="datatime-attribute-remove-btn" onClick={() => onRemoveDatetimeAttribute(a.name)} />
+          </li>)}
+      </ul>
       <Divider />
       <Field label="Query Text" description="The PartiQL statement representing the operation to run">
         <CodeEditor

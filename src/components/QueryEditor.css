@@ -1,4 +1,29 @@
-.datetime-fields {
+.datatime-attribute-list {
+    list-style-type: none;
+    display: flex;
     justify-content: start;
-    margin-bottom: 5px;
+    gap: 4px;
+    margin: 5px 0;
+}
+
+
+.datatime-attribute-item {
+    border-radius: 2px;
+    background-color: rgb(47, 87, 94); 
+    border-color: rgb(85, 125, 132);
+    border-style: solid;
+    display: flex;
+    gap: 3px;
+    align-items: center;
+    height: 24px;
+    line-height: 22px;
+    padding: 0px 0px 0px 4px;
+    font-size: 12px;
+}
+
+.datatime-attribute-name {
+    max-width: 25ch;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    color: rgb(255, 255, 255);
 }

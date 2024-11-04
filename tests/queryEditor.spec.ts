@@ -79,7 +79,7 @@ async function addDatetimeFormats(datetimeAttributes: DatetimeAttribute[], panel
                 setTimeout(resolve, 1000);
             });
             await panelEditPage.getQueryEditorRow("A").getByPlaceholder("Enter day.js datatime format").fill(attribute.format);
-            await page.keyboard.press("Enter");
+            await panelEditPage.getQueryEditorRow("A").getByTestId("datetime-format-add").click();
         }
     }
 }
@@ -125,6 +125,5 @@ test("should return correct datetime", async ({
 
     const expected = dayjs.tz(1730408669000, Intl.DateTimeFormat().resolvedOptions().timeZone).format("YYYY-MM-DD HH:mm:ss");
     console.log(expected);
-
     await expect(panelEditPage.panel.data.getByText(expected)).toHaveCount(4);
 });
