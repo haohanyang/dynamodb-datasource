@@ -58,7 +58,7 @@ export function QueryEditor({ query, onChange }: Props) {
 
   const onAddDatetimeField = () => {
     let format = "";
-    if (datetimeFormatOption == DatetimeFormat.UnixTimestampMiniseconds || datetimeFormatOption == DatetimeFormat.UnixTimestampSeconds) {
+    if (datetimeFormatOption === DatetimeFormat.UnixTimestampMiniseconds || datetimeFormatOption === DatetimeFormat.UnixTimestampSeconds) {
       format = datetimeFormatOption;
     } else {
       format = customDatetimeFormatInput;
