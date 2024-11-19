@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/grafana/grafana/main/docs/sources/developers/plugins/plugin.schema.json",
   "type": "datasource",
-  "name": "Dynamodb-Datasource",
+  "name": "DynamoDB",
   "id": "haohanyang-dynamodb-datasource",
   "metrics": true,
   "backend": true,
@@ -22,8 +22,8 @@
     },
     "links": [],
     "screenshots": [],
-    "version": "%VERSION%",
-    "updated": "%TODAY%"
+    "version": "0.1.0",
+    "updated": "2024-11-19"
   },
   "dependencies": {
     "grafanaDependency": ">=10.4.0",
