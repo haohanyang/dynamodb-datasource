@@ -40,3 +40,6 @@ ci/
 
 # Python virtual environment
 venv/
+
+dynamodb-datasource/
+grafana-storage/

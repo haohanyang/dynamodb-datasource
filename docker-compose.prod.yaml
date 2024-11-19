@@ -1,0 +1,10 @@
+services:
+  grafana:
+    image: grafana/grafana
+    ports:
+      - 3000:3000
+    volumes:
+      - ./grafana-storage:/var/lib/grafana
+      - ./dynamodb-datasource:/var/lib/grafana/plugins/haohanyang-dynamodb-datasource
+    environment:
+      GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: haohanyang-dynamodb-datasource
