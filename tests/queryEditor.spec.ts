@@ -84,7 +84,7 @@ async function addDatetimeFormats(datetimeAttributes: DatetimeAttribute[], panel
     }
 }
 
-test.setTimeout(200000);
+test.setTimeout(100000);
 
 test.beforeAll(async function ({ createDataSource, readProvisionedDataSource }) {
     const ds = await readProvisionedDataSource({ fileName: "e2e.yml" });
