@@ -8,6 +8,18 @@ Query your Amazon DynamoDB using PartiQL and visualize the results in your Grafa
 ![screenshot2](/images/screenshot2.png)
 
 ## Get started
+### Quick start
+Run the script [quick_start.py](scripts/quick_start.py) in the root directory to start Grafana containers with the DynamoDB plugin
+```
+python3 scripts/quick_start.py
+```
+Visit your Grafana at http://localhost:3000 and configure the data source with your AWS credentials
+### Full steps
+1. **Download:** Obtain the latest plugin build `haohanyang-dynamodb-datasource-<version>.zip` from the [Release](https://github.com/haohanyang/dynamodb-datasource/releases).
+
+2. **Install:** 
+   - Extract the downloaded archive (`haohanyang-dynamodb-datasource-<version>.zip`) into your Grafana plugins directory (`/var/lib/grafana/plugins` or similar).
+   - Ensure the plugin binaries (`dynamodb-datasource/gpx_dynamodb_datasource_*`) have execute permissions (`chmod +x`).
 ### Data source Configuration
 The plugin uses [grafana-aws-sdk-react](https://github.com/grafana/grafana-aws-sdk-react) in the configuration page, a common package used for all AWS-related plugins(including plugins made by Grafana Lab). In addition, to test the connection, the plugin requires a "test table", to which the plugin makes a [DescribeTable](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_DescribeTable.html) request.
 
