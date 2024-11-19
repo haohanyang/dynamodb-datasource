@@ -18,7 +18,7 @@ jobs:
       localstack:
         image: localstack/localstack
         ports:
-          - 4566:4566 # LocalStack Gateway
+          - 4566:4566
         env:
           SERVICES: dynamodb
     steps:
