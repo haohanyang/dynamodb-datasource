@@ -18,8 +18,8 @@ require (
 	github.com/mithrandie/go-file/v2 v2.1.0 // indirect
 	github.com/mithrandie/go-text v1.6.0 // indirect
 	github.com/mithrandie/ternary v1.1.1 // indirect
-	golang.org/x/crypto v0.27.0 // indirect
-	golang.org/x/term v0.24.0 // indirect
+	golang.org/x/crypto v0.31.0 // indirect
+	golang.org/x/term v0.27.0 // indirect
 )
 
 require (
@@ -99,9 +99,9 @@ require (
 	golang.org/x/exp v0.0.0-20240808152545-0cdaa3abc0fa // indirect
 	golang.org/x/mod v0.20.0 // indirect
 	golang.org/x/net v0.29.0 // indirect
-	golang.org/x/sync v0.8.0 // indirect
-	golang.org/x/sys v0.25.0 // indirect
-	golang.org/x/text v0.18.0 // indirect
+	golang.org/x/sync v0.10.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/tools v0.24.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240716161551-93cc26a95ae9 // indirect
 	google.golang.org/genproto v0.0.0-20210630183607-d20f26d13c79 // indirect
